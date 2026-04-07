@@ -173,17 +173,6 @@ HTML = """
         // Initialize Icons
         lucide.createIcons();
 
-        // Configure Marked.js with Highlight.js
-        marked.setOptions({
-            highlight: function(code, lang) {
-                const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-                return hljs.highlight(code, { language }).value;
-            },
-            langPrefix: 'hljs language-',
-            breaks: true,
-            gfm: true
-        });
-
         // DOM Elements
         const chatEl = document.getElementById("chat");
         const chatContainer = document.getElementById("chat-container");
@@ -316,7 +305,7 @@ HTML = """
         }
 
         function formatMarkdown(content) {
-            const rawMarkup = marked.parse(content);
+            const rawMarkup = marked.parse(content, { breaks: true, gfm: true });
             return DOMPurify.sanitize(rawMarkup, { ADD_CLASSES: {'code': 'hljs', 'pre': 'hljs'} });
         }
 
