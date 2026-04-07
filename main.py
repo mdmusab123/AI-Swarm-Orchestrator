@@ -5,7 +5,7 @@ import requests
 app = Flask(__name__)
 
 MODEL = "phi3:mini"
-API_URL = "127.0.0.1:11434/api/chat"
+API_URL = "http://127.0.0.1:11434/api/chat"
 
 HTML = """
 <!DOCTYPE html>
