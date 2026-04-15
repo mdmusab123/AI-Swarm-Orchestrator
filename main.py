@@ -479,6 +479,15 @@ VISION_MODEL = "llava"  # Ollama vision model — run: ollama pull llava
 
 # --- AGENTIC LOOP AND PARSER ---
 def ask_ai_stream(messages, target_model=MODEL, tools_enabled=True, router_enabled=True, force_web_search=False, thinking_enabled=False, tavily_key="", vision_enabled=False):
+    # --- CONTEXT PRUNING (SLIDING WINDOW) ---
+    MAX_MESSAGES = 10
+    if len(messages) > MAX_MESSAGES:
+        # Save any system messages (like injected doc context or initial prompts)
+        sys_msgs = [m for m in messages if m.get("role") == "system"]
+        # Keep only the most recent N messages
+        recent_msgs = [m for m in messages if m.get("role") != "system"][-MAX_MESSAGES:]
+        messages = sys_msgs + recent_msgs
+
     # --- VISION DETECTION: Only activate if user toggled Vision ON and images are present ---
     has_images = vision_enabled and any(m.get("images") for m in messages)
     if has_images:
