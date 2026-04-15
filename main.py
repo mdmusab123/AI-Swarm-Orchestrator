@@ -620,12 +620,15 @@ Categorize the user's LATEST request into EXACTLY ONE of these strings:
 [ROUTE: ANALYSIS] - Use when the user asks to scan, review, optimize, or analyze the AI's own code/codebase.
 [ROUTE: DATA] - Use when the user uploads or mentions a CSV/Excel file, asks for charts, plots, statistics, or data insights.
 [ROUTE: GENERAL] - Use for general conversation only IF you are 100% sure the answer doesn't need live data.
+[ROUTE: PLANNER] - Use if the user explicitly asks you to solve a complex, multi-step problem that requires combining multiple actions (e.g. searching AND coding, or reading files AND searching).
+
 
 IMPORTANT: If the user asks about anything CURRENT (leaders, dates, news, status), you MUST choose [ROUTE: RESEARCH].
 IMPORTANT: If a Python script previously failed due to a missing module/library, or if the user asks to install/download something, you MUST choose [ROUTE: SYSTEM].
 IMPORTANT: If the user uploaded a document and asks you to read or summarize it, you MUST choose [ROUTE: DOCS].
 IMPORTANT: If the user asks to scan, review, or analyze the AI's own code or source files, you MUST choose [ROUTE: ANALYSIS].
 IMPORTANT: If the user mentions CSV, Excel, charts, plots, data analysis, or statistics, you MUST choose [ROUTE: DATA].
+IMPORTANT: If the user asks for a complex sequence of tasks requiring multiple distinct tools, you MUST choose [ROUTE: PLANNER].
 {few_shot_block}
 
 Recent User Messages Context:
@@ -710,6 +713,20 @@ Output ONLY the exact category string and nothing else."""
                     icon = "💻 System Node"
                     os_type = "powershell" if platform.system() == "Windows" else "bash"
                     tool_instructions = f"You are the System Node. Do NOT converse. To control the OS ({os_type}), output EXACTLY AND ONLY this syntax:\n[RUN_SHELL: command name]\nExample:\n[RUN_SHELL: ping google.com]"
+                elif "[ROUTE: PLANNER]" in route_text:
+                    cat = "PLANNER"
+                    icon = "🧭 Planner Node"
+                    tool_instructions = (
+                        "You are the Planner Node. You orchestrate multiple tools to solve complex multi-step problems.\n"
+                        "First, detail your step-by-step plan. Then, execute ONLY the very first tool. Wait for the system to return the result before executing the next tool.\n"
+                        "Available Tools:\n"
+                        "- [SEARCH: query]\n"
+                        "- [PYTHON: code]\n"
+                        "- [WRITE_FILE: path/to/file.ext]\ncontent\n[/WRITE_FILE]\n"
+                        "- [READ_FILE: path]\n"
+                        "- [RUN_SHELL: command]\n"
+                        "Remember: Output ONLY ONE tool per response. Do not output multiple bracketed tool calls at once. Wait for the system notice containing tool results."
+                    )
                 else:
                     cat = "GENERAL"
                     icon = "🧠 General Node"
