@@ -378,8 +378,37 @@ def execute_shell(command):
     except Exception as e:
         return f"Shell Execution Error: {str(e)}"
 
+# --- VISION MODEL ---
+VISION_MODEL = "llava"  # Ollama vision model — run: ollama pull llava
+
 # --- AGENTIC LOOP AND PARSER ---
 def ask_ai_stream(messages, target_model=MODEL, tools_enabled=True, router_enabled=True, force_web_search=False, thinking_enabled=False, tavily_key=""):
+    # --- VISION DETECTION: If any message has images, route to llava ---
+    has_images = any(m.get("images") for m in messages)
+    if has_images:
+        def generate_vision():
+            yield json.dumps({"type": "status", "text": "👁️ Vision Node activated — analyzing image..."}) + "\n"
+            try:
+                response = requests.post(
+                    API_URL,
+                    json={"model": VISION_MODEL, "messages": messages, "stream": True},
+                    stream=True,
+                    timeout=180
+                )
+                response.raise_for_status()
+                for line in response.iter_lines():
+                    if line:
+                        try:
+                            data = json.loads(line.decode('utf-8'))
+                            chunk = data.get("message", {}).get("content", "") or data.get("response", "")
+                            if chunk:
+                                yield json.dumps({"type": "content", "text": chunk}) + "\n"
+                        except:
+                            continue
+            except Exception as e:
+                yield json.dumps({"type": "content", "text": f"Vision Error: {e}"}) + "\n"
+        return generate_vision()
+
     if tools_enabled:
         user_msgs = [m["content"] for m in messages if m["role"] == "user"]
         if user_msgs:
