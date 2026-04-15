@@ -481,6 +481,9 @@ def execute_shell(command):
 # --- VISION MODEL ---
 VISION_MODEL = "llava"  # Ollama vision model — run: ollama pull llava
 
+# --- ROUTER NANO-MODEL ---
+ROUTER_MODEL = "qwen2:0.5b"  # Ultra-fast routing model — run: ollama pull qwen2:0.5b
+
 # --- AGENTIC LOOP AND PARSER ---
 def ask_ai_stream(messages, target_model=MODEL, tools_enabled=True, router_enabled=True, force_web_search=False, thinking_enabled=False, tavily_key="", vision_enabled=False):
     # --- CONTEXT PRUNING (SLIDING WINDOW) ---
@@ -643,10 +646,11 @@ Output ONLY the exact category string and nothing else."""
                 else:
                     try:
                         router_res = requests.post(API_URL, json={
-                            "model": target_model, 
+                            "model": ROUTER_MODEL, 
                             "messages": [{"role": "user", "content": router_prompt}], 
                             "stream": False
                         }, timeout=10)
+                        router_res.raise_for_status()
                         router_data = router_res.json()
                         route_text = router_data.get("message", {}).get("content", "").strip()
                     except Exception as e:
