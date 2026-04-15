@@ -1,6 +1,9 @@
 import json
 from flask import Flask, request, Response, stream_with_context, render_template_string
 import requests
+import subprocess
+import time
+import platform
 
 app = Flask(__name__)
 
@@ -360,6 +363,50 @@ def chat():
     messages = data.get("messages", [])
     return Response(stream_with_context(ask_ai_stream(messages)), mimetype='text/plain')
 
+def install_cloudflared():
+    system = platform.system().lower()
+    if system == 'linux':
+        try:
+            subprocess.run(['curl', '-L', 'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64', '-o', 'cloudflared'], check=True)
+            subprocess.run(['chmod', '+x', 'cloudflared'], check=True)
+            try:
+                subprocess.run(['sudo', 'mv', 'cloudflared', '/usr/local/bin/'], check=True)
+            except subprocess.CalledProcessError:
+                print("Installed cloudflared locally. Ensure it's in your PATH or run from the script directory.")
+        except subprocess.CalledProcessError:
+            print("Failed to install cloudflared. Please install manually.")
+    else:
+        print("This script is configured for Linux only. Please install cloudflared manually from https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/tunnel-guide/")
+
 if __name__ == "__main__":
+    # Check and install cloudflared if needed
+    try:
+        subprocess.run(['cloudflared', '--version'], capture_output=True, check=True, text=True)
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        print("cloudflared not found. Installing...")
+        install_cloudflared()
+    
+    # Start Cloudflare Tunnel
+    try:
+        print("Starting Cloudflare Tunnel...")
+        tunnel_process = subprocess.Popen(
+            ['cloudflared', 'tunnel', '--url', 'http://localhost:5000'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        # Wait a moment for tunnel to initialize and print URL
+        time.sleep(5)
+        # Read any initial output
+        if tunnel_process.poll() is None:  # Still running
+            print("Cloudflare Tunnel started. The public URL should be displayed above.")
+        else:
+            stdout, stderr = tunnel_process.communicate()
+            print("Tunnel output:", stdout)
+            if stderr:
+                print("Tunnel error:", stderr)
+    except FileNotFoundError:
+        print("cloudflared not found. Please install cloudflared from https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/tunnel-guide/")
+    
     # Using threaded=True to allow streaming and UI interactions simultaneously
     app.run(port=5000, debug=True, threaded=True)
