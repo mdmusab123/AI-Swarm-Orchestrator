@@ -15,7 +15,7 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__)
 
 # CONFIGURATION
-MODEL = "gemma4:e2b"
+MODEL = "gemma4:e4b"
 API_URL = "http://127.0.0.1:11434/api/chat"
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -223,7 +223,7 @@ def execute_shell(command):
         return f"Shell Execution Error: {str(e)}"
 
 # --- AGENTIC LOOP AND PARSER ---
-def ask_ai_stream(messages, target_model=MODEL, tools_enabled=True, router_enabled=True, force_web_search=False):
+def ask_ai_stream(messages, target_model=MODEL, tools_enabled=True, router_enabled=True, force_web_search=False, thinking_enabled=False):
     if tools_enabled:
         user_msgs = [m["content"] for m in messages if m["role"] == "user"]
         if user_msgs:
@@ -326,15 +326,19 @@ Output ONLY the exact category string for the final request and nothing else. Ex
                     cat = "GENERAL"
                     icon = "🧠 General Node"
                     tool_instructions = "You are the General Node. If the user asks you to remember, save, or note down a fact, you MUST output ONLY this syntax:\n[MEM_SAVE: fact here]\nDo NOT converse if saving memory. Otherwise, converse normally."
-                
-                # --- NEW: UI Feedback for active Node ---
-                yield json.dumps({"type": "status", "text": icon}) + "\n"
 
             # Inject dynamic sub-agent instructions safely into system prompt
             if len(current_run_msgs) > 0 and current_run_msgs[0]["role"] == "system":
                 current_run_msgs[0]["content"] += "\n\n" + tool_instructions
             else:
                 current_run_msgs.insert(0, {"role": "system", "content": tool_instructions})
+        
+        if thinking_enabled:
+            think_prompt = "You must deeply think about the problem before answering. Provide your step-by-step thinking process enclosed in <think>...</think> tags at the very beginning of your response."
+            if len(current_run_msgs) > 0 and current_run_msgs[0]["role"] == "system":
+                current_run_msgs[0]["content"] += "\n\n" + think_prompt
+            else:
+                current_run_msgs.insert(0, {"role": "system", "content": think_prompt})
         
         loop_count = 0
         max_loops = 3
@@ -479,8 +483,9 @@ def chat():
     target_model = data.get("model", MODEL)
     router_enabled = data.get("router_enabled", True)
     force_web_search = data.get("force_web_search", False)
+    thinking_enabled = data.get("thinking_enabled", False)
     
-    return Response(stream_with_context(ask_ai_stream(messages, target_model, tools_enabled, router_enabled, force_web_search)), mimetype='application/x-ndjson')
+    return Response(stream_with_context(ask_ai_stream(messages, target_model, tools_enabled, router_enabled, force_web_search, thinking_enabled)), mimetype='application/x-ndjson')
 
 if __name__ == "__main__":
     try:

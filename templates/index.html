@@ -154,6 +154,24 @@
             box-shadow: 0 0 12px rgba(59, 130, 246, 0.15);
         }
 
+        /* --- Thinking Active --- */
+        .think-active {
+            background: rgba(234, 179, 8, 0.15) !important;
+            color: #facc15 !important;
+            border-color: rgba(234, 179, 8, 0.25) !important;
+            box-shadow: 0 0 15px rgba(234, 179, 8, 0.1);
+        }
+        
+        .think-block {
+            border-left: 2px solid rgba(234, 179, 8, 0.5);
+            background: rgba(234, 179, 8, 0.03);
+            border-radius: 0 0.5rem 0.5rem 0;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            color: #a1a1aa;
+            font-size: 0.9em;
+        }
+
         /* Shimmer */
         .shimmer {
             background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.03) 50%, rgba(255,255,255,0) 100%);
@@ -226,6 +244,10 @@
                         
                         <button id="web-search-btn" onclick="toggleWebSearch()" class="p-2.5 mb-0.5 text-zinc-500 hover:text-zinc-300 hover:bg-white/5 rounded-xl transition-all shrink-0 flex items-center" title="Force Web Search">
                             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                        </button>
+                        
+                        <button id="think-btn" onclick="toggleThinking()" class="p-2.5 mb-0.5 text-zinc-500 hover:text-zinc-300 hover:bg-white/5 rounded-xl transition-all shrink-0 flex items-center" title="Thinking Mode">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H15M12 17V21M7.9 11.2C7.3 10.5 7 9.8 7 9C7 6.2 9.2 4 12 4C14.8 4 17 6.2 17 9C17 9.8 16.7 10.5 16.1 11.2C15.2 12.3 15 13.5 15 15H9C9 13.5 8.8 12.3 7.9 11.2Z"></path></svg>
                         </button>
 
                         <textarea 
@@ -307,6 +329,7 @@
         let routerEnabled = localStorage.getItem('ai_router_enabled') !== 'false';
         let activeModel = localStorage.getItem('ai_model') || 'gemma4:e2b';
         let forceWebSearch = false;
+        let thinkingEnabled = false;
 
         const chatEl = document.getElementById("chat");
         const chatContainer = document.getElementById("chat-container");
@@ -396,6 +419,16 @@
                 btn.classList.add('web-search-active');
             } else {
                 btn.classList.remove('web-search-active');
+            }
+        }
+
+        function toggleThinking() {
+            thinkingEnabled = !thinkingEnabled;
+            const btn = document.getElementById('think-btn');
+            if (thinkingEnabled) {
+                btn.classList.add('think-active');
+            } else {
+                btn.classList.remove('think-active');
             }
         }
 
@@ -562,7 +595,19 @@
 
         function formatMarkdown(text) {
             if (typeof marked === 'undefined') return text;
-            const html = marked.parse(text, { breaks: true });
+            
+            let processedText = text;
+            
+            processedText = processedText.replace(/<think>([\s\S]*?)<\/think>/gi, (match, p1) => {
+                return `\n<details class="think-block" open><summary class="text-xs font-bold text-yellow-500 cursor-pointer uppercase tracking-wider mb-2 outline-none">Thinking Process</summary>\n\n${p1}\n\n</details>\n`;
+            });
+            
+            if (processedText.includes('<think>') && !processedText.includes('</think>')) {
+                let parts = processedText.split('<think>');
+                processedText = parts[0] + `\n<details class="think-block" open><summary class="text-xs font-bold text-yellow-500 cursor-pointer uppercase tracking-wider mb-2 outline-none">Thinking Process</summary>\n\n${parts[1]}\n\n</details>\n`;
+            }
+
+            const html = marked.parse(processedText, { breaks: true });
             return DOMPurify.sanitize(html);
         }
 
@@ -643,6 +688,7 @@
                         tools_enabled: toolsEnabled, 
                         router_enabled: routerEnabled,
                         force_web_search: forceWebSearch,
+                        thinking_enabled: thinkingEnabled,
                         model: activeModel 
                     })
                 });
