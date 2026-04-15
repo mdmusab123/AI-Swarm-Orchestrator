@@ -143,6 +143,8 @@ def get_memories():
         return []
 
 # --- WEB SEARCH ---
+from bs4 import BeautifulSoup
+import urllib.parse
 def search_web(query):
     try:
         url = "https://html.duckduckgo.com/html/"
