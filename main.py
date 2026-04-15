@@ -173,6 +173,7 @@ HTML = """
             currentChatId = Date.now().toString();
             messageHistory = [];
             chats.unshift({ id: currentChatId, title: 'New Chat', messages: [] });
+            saveState();
             loadChat(currentChatId);
         }
 
