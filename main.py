@@ -306,7 +306,7 @@ Example: If asked to ping google, output exactly and ONLY:
                 last_msgs = "\n".join([f"- {m}" for m in user_msgs[-3:]]) if user_msgs else "General query"
                 
                 # Check for "Current Event", "System", or "Documents" keywords to bias the router
-                current_event_keywords = ["current", "latest", "now", "who is", "today", "news", "status", "price"]
+                current_event_keywords = ["current", "latest", "now", "who is", "today", "news", "status", "price", "population", "compare", "details of", "how many", "weather"]
                 system_keywords = ["install", "pip", "modulenotfounderror", "missing module", "download"]
                 last_user_msg = user_msgs[-1].lower() if user_msgs else ""
                 
@@ -369,7 +369,7 @@ Output ONLY the exact category string and nothing else."""
                 else:
                     cat = "GENERAL"
                     icon = "🧠 General Node"
-                    tool_instructions = "You are the General Node. If the user asks you to remember, save, or note down a fact, you MUST output ONLY this syntax:\n[MEM_SAVE: fact here]\nDo NOT converse if saving memory. Otherwise, converse normally."
+                    tool_instructions = "You are the General Node. If the user asks you to remember, save, or note down a fact, you MUST output ONLY this syntax:\n[MEM_SAVE: fact here]\nDo NOT converse if saving memory. Otherwise, converse normally. If you realize you lack factual data to answer a query definitively, self-correct and output EXACTLY AND ONLY:\n[SEARCH: specific query]"
 
             # Inject custom tools from file system
             available_tools_list = []
@@ -380,6 +380,10 @@ Output ONLY the exact category string and nothing else."""
             tools_str = ", ".join(available_tools_list) if available_tools_list else "None yet."
             
             tool_instructions += f"\n\n[SELF-EVOLVING TOOLS]\nYou can create persistent python scripts in the tools/ directory.\nTo create a tool, output EXACTLY AND ONLY:\n[SAVE_TOOL: filename.py]\n<python code here>\n[/SAVE_TOOL]\n\nTo execute an existing tool, use: [RUN_SHELL: python tools/filename.py --args]\nAvailable custom tools in tools/ folder: {tools_str}"
+
+            # Design & Formatting Protocol
+            formatting_protocol = "\n\n[OUTPUT DESIGN PROTOCOL]\nWhen giving conversational answers, you MUST look premium and professional. Rule 1: Use bolding for key terms. Rule 2: Use Markdown tables for comparisons or structured data. Rule 3: Use bullet points for lists. Rule 4: Do not output walls of text; use short punchy paragraphs. Rule 5: Be decisive and authoritative; remove filler phrases."
+            tool_instructions += formatting_protocol
 
             # Inject dynamic sub-agent instructions safely into system prompt
             if len(current_run_msgs) > 0 and current_run_msgs[0]["role"] == "system":
