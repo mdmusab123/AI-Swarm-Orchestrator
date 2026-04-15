@@ -128,13 +128,13 @@ def graph_get_all_edges():
     conn.close()
     return edges
 
-def extract_entities(text):
+def extract_entities(text, model_name=MODEL):
     """Uses Ollama to extract named entities from a text snippet. Returns list of strings."""
     try:
         prompt = (f"Extract all named entities (projects, names, tools, bugs, dates, companies, features) "
                   f"from this text. Return ONLY a comma-separated list, nothing else.\n\nText: {text[:500]}")
         r = requests.post(API_URL, json={
-            "model": MODEL,
+            "model": model_name,
             "messages": [{"role": "user", "content": prompt}],
             "stream": False
         }, timeout=15)
@@ -225,7 +225,7 @@ def search_docs(query):
 
 
 
-def save_memory(fact):
+def save_memory(fact, model_name=MODEL):
     try:
         mem_id = f"mem_{uuid.uuid4().hex[:8]}"
         memory_collection.add(
@@ -235,7 +235,7 @@ def save_memory(fact):
         )
         # --- GRAPHRAG: Extract entities and wire into knowledge graph ---
         graph_upsert_node(mem_id, fact.strip()[:120], "memory")
-        entities = extract_entities(fact)
+        entities = extract_entities(fact, model_name)
         for ent in entities:
             ent_id = f"ent_{ent.replace(' ', '_')[:40]}"
             graph_upsert_node(ent_id, ent, "entity")
@@ -855,7 +855,7 @@ Output ONLY the exact category string and nothing else."""
                     elif mem_save_match:
                         fact = mem_save_match.group(1).strip()
                         yield json.dumps({"type": "status", "text": f"🧠 Saving memory..."}) + "\n"
-                        save_memory(fact)
+                        save_memory(fact, target_model)
                         yield json.dumps({"type": "status", "text": f"✅ Memory saved."}) + "\n"
                         
                         current_run_msgs.append({"role": "assistant", "content": full_response})
@@ -1033,12 +1033,14 @@ def get_memories_graph():
             if source in known_ids and target in known_ids:
                 links.append({"source": source, "target": target, "label": relation})
 
-        # Fallback: if no graph data, pull from ChromaDB
-        if len(nodes) == 1 and memory_collection.count() > 0:
+        # Merge legacy vector DB memories that might not be in the Graph yet
+        if memory_collection.count() > 0:
             data = memory_collection.get(include=["documents"])
-            for i, (doc, mid) in enumerate(zip(data.get("documents", []), data.get("ids", []))):
-                nodes.append({"id": mid, "name": doc[:60], "val": 6, "color": "#f59e0b", "type": "memory"})
-                links.append({"source": "nexus_core", "target": mid})
+            for doc, mid in zip(data.get("documents", []), data.get("ids", [])):
+                if mid not in known_ids:
+                    nodes.append({"id": mid, "name": doc[:60], "val": 6, "color": "#f59e0b", "type": "memory", "desc": f"[MEMORY] {doc}"})
+                    links.append({"source": "nexus_core", "target": mid})
+                    known_ids.add(mid)
 
         return {"nodes": nodes, "links": links}
     except Exception as e:

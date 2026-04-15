@@ -490,7 +490,6 @@
                 modal.classList.remove('hidden');
                 setTimeout(() => modal.classList.remove('opacity-0'), 10);
                 
-                // Initialize graph if not already done
                 if (!graphInstance) {
                     const container = document.getElementById('3d-graph-container');
                     try {
@@ -525,6 +524,17 @@
                     } catch (e) {
                         console.error('Failed to load map data:', e);
                         container.innerHTML = `<div class="absolute inset-0 flex items-center justify-center text-red-400">Failed to load memory graph: ${e.message}</div>`;
+                    }
+                } else {
+                    // Update existing graph with new data
+                    try {
+                        const res = await fetch('/memories_graph');
+                        const data = await res.json();
+                        if (!data.error && data.nodes.length > 1) {
+                            graphInstance.graphData(data);
+                        }
+                    } catch (e) {
+                        console.error('Failed to refresh map data:', e);
                     }
                 }
             } else {
