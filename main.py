@@ -743,7 +743,7 @@ Output ONLY the exact category string and nothing else."""
                 current_run_msgs.insert(0, {"role": "system", "content": think_prompt})
         
         loop_count = 0
-        max_loops = 3
+        max_loops = 5
 
         while loop_count < max_loops:
             buffer = ""
@@ -909,10 +909,15 @@ Output ONLY the exact category string and nothing else."""
                         yield json.dumps({"type": "content", "text": f"\n```python\n{code}\n```\n"}) + "\n"
                         
                         tool_result = execute_python(code)
-                        yield json.dumps({"type": "status", "text": f"✅ Execution finished."}) + "\n"
-                        
                         current_run_msgs.append({"role": "assistant", "content": full_response})
-                        current_run_msgs.append({"role": "user", "content": f"System Notice: Python Execution Output (stdout/stderr):\n{tool_result}\n\nUse this information to answer the initial query."})
+                        
+                        if "Python Execution Error:" in tool_result or "Traceback" in tool_result or "Error:" in tool_result:
+                            yield json.dumps({"type": "status", "text": f"⚠️ Execution failed. Self-correcting..."}) + "\n"
+                            current_run_msgs.append({"role": "user", "content": f"System Notice: Python Execution FAILED with error:\n{tool_result}\n\nDO NOT APOLOGIZE. Identify the bug and instantly write a fully corrected version of the python script using [PYTHON: ...]. You must fix this."})
+                        else:
+                            yield json.dumps({"type": "status", "text": f"✅ Execution finished."}) + "\n"
+                            current_run_msgs.append({"role": "user", "content": f"System Notice: Python Execution Output (stdout/stderr):\n{tool_result}\n\nUse this information to answer the initial query."})
+                        
                         tool_triggered = True
                         break
 
