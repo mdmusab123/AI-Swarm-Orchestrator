@@ -345,6 +345,14 @@
                             </svg>
                         </button>
 
+                        <!-- Vision Node Toggle -->
+                        <button id="vision-btn" onclick="toggleVision()" class="p-2.5 mb-0.5 text-zinc-500 hover:text-zinc-300 hover:bg-white/5 rounded-xl transition-all shrink-0 flex items-center" title="Vision Node (llava) - Click to Enable">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                        </button>
+
                         <button id="send-btn" onclick="sendMessage()" class="send-btn p-2.5 mb-0.5 rounded-xl disabled:cursor-not-allowed shrink-0">
                             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
                         </button>
@@ -437,6 +445,8 @@
         let activeModel = localStorage.getItem('ai_model') || 'gemma4:e2b';
         let forceWebSearch = false;
         let thinkingEnabled = false;
+        let visionEnabled = false;
+        let ttsEnabled = false;
         let tavilyApiKey = localStorage.getItem('ai_tavily_key') || '';
 
         const chatEl = document.getElementById("chat");
@@ -592,6 +602,20 @@
                 btn.classList.add('think-active');
             } else {
                 btn.classList.remove('think-active');
+            }
+        }
+
+        function toggleVision() {
+            visionEnabled = !visionEnabled;
+            const btn = document.getElementById('vision-btn');
+            if (visionEnabled) {
+                btn.classList.remove('text-zinc-500');
+                btn.classList.add('text-violet-400', 'bg-violet-500/10', 'border', 'border-violet-500/30');
+                btn.title = '👁️ Vision Node ACTIVE (llava) - Click to Disable';
+            } else {
+                btn.classList.add('text-zinc-500');
+                btn.classList.remove('text-violet-400', 'bg-violet-500/10', 'border', 'border-violet-500/30');
+                btn.title = 'Vision Node (llava) - Click to Enable';
             }
         }
 
@@ -856,6 +880,7 @@
                         router_enabled: routerEnabled,
                         force_web_search: forceWebSearch,
                         thinking_enabled: thinkingEnabled,
+                        vision_enabled: visionEnabled,
                         model: activeModel,
                         tavily_api_key: tavilyApiKey
                     })

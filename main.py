@@ -478,9 +478,9 @@ def execute_shell(command):
 VISION_MODEL = "llava"  # Ollama vision model — run: ollama pull llava
 
 # --- AGENTIC LOOP AND PARSER ---
-def ask_ai_stream(messages, target_model=MODEL, tools_enabled=True, router_enabled=True, force_web_search=False, thinking_enabled=False, tavily_key=""):
-    # --- VISION DETECTION: If any message has images, route to llava ---
-    has_images = any(m.get("images") for m in messages)
+def ask_ai_stream(messages, target_model=MODEL, tools_enabled=True, router_enabled=True, force_web_search=False, thinking_enabled=False, tavily_key="", vision_enabled=False):
+    # --- VISION DETECTION: Only activate if user toggled Vision ON and images are present ---
+    has_images = vision_enabled and any(m.get("images") for m in messages)
     if has_images:
         def generate_vision():
             yield json.dumps({"type": "status", "text": "👁️ Vision Node activated — analyzing image..."}) + "\n"
@@ -986,9 +986,10 @@ def chat():
     router_enabled = data.get("router_enabled", True)
     force_web_search = data.get("force_web_search", False)
     thinking_enabled = data.get("thinking_enabled", False)
+    vision_enabled = data.get("vision_enabled", False)
     tavily_key = data.get("tavily_api_key", "") or TAVILY_API_KEY
     
-    return Response(stream_with_context(ask_ai_stream(messages, target_model, tools_enabled, router_enabled, force_web_search, thinking_enabled, tavily_key)), mimetype='application/x-ndjson')
+    return Response(stream_with_context(ask_ai_stream(messages, target_model, tools_enabled, router_enabled, force_web_search, thinking_enabled, tavily_key, vision_enabled)), mimetype='application/x-ndjson')
 
 @app.route("/charts/<filename>")
 def serve_chart(filename):
