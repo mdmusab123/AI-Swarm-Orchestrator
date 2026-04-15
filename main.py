@@ -1,11 +1,14 @@
 import json
 from flask import Flask, request, Response, stream_with_context, render_template_string
 import requests
+import subprocess
+import time
+import platform
 
 app = Flask(__name__)
 
 # CONFIGURATION
-MODEL = "phi3:mini"
+MODEL = "gemma4:e2b"
 # Ensure this URL is accessible and pointing to your Ollama/AI provider
 API_URL = "http://127.0.0.1:11434/api/chat"
 
@@ -360,6 +363,20 @@ def chat():
     messages = data.get("messages", [])
     return Response(stream_with_context(ask_ai_stream(messages)), mimetype='text/plain')
 
+def install_cloudflared():
+    system = platform.system().lower()
+    if system == 'linux':
+        try:
+            subprocess.run(['curl', '-L', 'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64', '-o', 'cloudflared'], check=True)
+            subprocess.run(['chmod', '+x', 'cloudflared'], check=True)
+            try:
+                subprocess.run(['sudo', 'mv', 'cloudflared', '/usr/local/bin/'], check=True)
+            except subprocess.CalledProcessError:
+                print("Installed cloudflared locally. Ensure it's in your PATH or run from the script directory.")
+        except subprocess.CalledProcessError:
+            print("Failed to install cloudflared. Please install manually.")
+    else:
+        print("This script is configured for Linux only. Please install cloudflared manually from https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/tunnel-guide/")
+
 if __name__ == "__main__":
-    # Using threaded=True to allow streaming and UI interactions simultaneously
-    app.run(port=5000, debug=True, threaded=True)
+    app.run(port=5020, debug=True)
