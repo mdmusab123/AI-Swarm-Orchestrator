@@ -1,0 +1,128 @@
+{
+    "version": "1.0",
+    "description": "Nexus Swarm Router Instruction Dataset — Teaches the AI when to use which tool and route.",
+    "routes": {
+        "RESEARCH": {
+            "description": "Web search, real-time data, current events, factual lookups.",
+            "tools": ["[SEARCH: query]", "[READ_URL: https://...]"],
+            "examples": [
+                {"input": "Who is the current president of the USA?", "action": "[SEARCH: current president of the USA 2026]"},
+                {"input": "What is the weather in Dhaka today?", "action": "[SEARCH: weather in Dhaka today]"},
+                {"input": "Latest news about AI", "action": "[SEARCH: latest AI news 2026]"},
+                {"input": "What is the population of Japan?", "action": "[SEARCH: population of Japan 2026]"},
+                {"input": "Compare GDP of India and China", "action": "[SEARCH: GDP comparison India vs China 2026]"},
+                {"input": "Who won the last FIFA World Cup?", "action": "[SEARCH: FIFA World Cup winner latest]"},
+                {"input": "What is Bitcoin price right now?", "action": "[SEARCH: Bitcoin price today]"},
+                {"input": "Tell me about the prime minister of Bangladesh", "action": "[SEARCH: current prime minister of Bangladesh 2026]"},
+                {"input": "How tall is the Eiffel Tower?", "action": "[SEARCH: height of Eiffel Tower]"},
+                {"input": "What happened in the stock market today?", "action": "[SEARCH: stock market news today]"},
+                {"input": "Who is Elon Musk?", "action": "[SEARCH: who is Elon Musk]"},
+                {"input": "What is the capital of Australia?", "action": "[SEARCH: capital of Australia]"},
+                {"input": "Show me the latest iPhone specs", "action": "[SEARCH: latest iPhone specs 2026]"},
+                {"input": "What are the side effects of paracetamol?", "action": "[SEARCH: paracetamol side effects]"},
+                {"input": "Explain quantum computing", "action": "[SEARCH: quantum computing explained]"},
+                {"input": "When was Python programming language created?", "action": "[SEARCH: Python programming language history]"},
+                {"input": "Search the web for best laptops under $1000", "action": "[SEARCH: best laptops under 1000 dollars 2026]"},
+                {"input": "Read this article: https://example.com/article", "action": "[READ_URL: https://example.com/article]"},
+                {"input": "What does this website say? https://news.ycombinator.com", "action": "[READ_URL: https://news.ycombinator.com]"},
+                {"input": "Summarize this link for me https://en.wikipedia.org/wiki/AI", "action": "[READ_URL: https://en.wikipedia.org/wiki/AI]"}
+            ],
+            "trigger_keywords": ["current", "latest", "now", "who is", "today", "news", "status", "price", "population", "compare", "details of", "how many", "weather", "what is", "tell me about", "explain", "search", "find", "look up", "when was", "where is", "capital of", "president", "prime minister", "winner", "score"]
+        },
+        "CODE": {
+            "description": "Math calculations, logic, scripting, data analysis, plotting.",
+            "tools": ["[PYTHON: code]"],
+            "examples": [
+                {"input": "What is 2 + 2?", "action": "[PYTHON: print(2 + 2)]"},
+                {"input": "Calculate the factorial of 10", "action": "[PYTHON: import math; print(math.factorial(10))]"},
+                {"input": "Generate a random password", "action": "[PYTHON: import random, string; print(''.join(random.choices(string.ascii_letters + string.digits, k=16)))]"},
+                {"input": "Convert 100 USD to BDT", "action": "[PYTHON: print(f'100 USD = {100 * 121.5:.2f} BDT (approx)')]"},
+                {"input": "Sort this list: [5, 3, 8, 1, 9]", "action": "[PYTHON: print(sorted([5, 3, 8, 1, 9]))]"},
+                {"input": "What is the square root of 144?", "action": "[PYTHON: import math; print(math.sqrt(144))]"},
+                {"input": "Write a Python script to count words in a sentence", "action": "[PYTHON: s = 'hello world this is a test'; print(f'Word count: {len(s.split())}')]"},
+                {"input": "Plot a sine wave", "action": "[PYTHON: import matplotlib.pyplot as plt; import numpy as np; x=np.linspace(0,10,100); plt.plot(x,np.sin(x)); plt.savefig('sine.png'); print('Saved sine.png')]"},
+                {"input": "Solve: 3x + 5 = 20", "action": "[PYTHON: x = (20 - 5) / 3; print(f'x = {x}')]"},
+                {"input": "Generate first 20 Fibonacci numbers", "action": "[PYTHON: a,b=0,1; fib=[]\nfor _ in range(20): fib.append(a); a,b=b,a+b\nprint(fib)]"}
+            ],
+            "trigger_keywords": ["calculate", "compute", "solve", "math", "script", "code", "python", "plot", "graph", "fibonacci", "factorial", "convert", "sort", "algorithm", "function", "generate"]
+        },
+        "DOCS": {
+            "description": "Reading, searching, and summarizing user-uploaded documents (PDF, TXT, MD).",
+            "tools": ["[SEARCH_DOC: query]"],
+            "examples": [
+                {"input": "Read the PDF file I uploaded", "action": "[SEARCH_DOC: full document content]"},
+                {"input": "Summarize my resume", "action": "[SEARCH_DOC: resume summary skills experience education]"},
+                {"input": "What does my document say about project management?", "action": "[SEARCH_DOC: project management]"},
+                {"input": "Find the contact information in my file", "action": "[SEARCH_DOC: contact information email phone address]"},
+                {"input": "List all the skills mentioned in my resume", "action": "[SEARCH_DOC: skills technical abilities competencies]"},
+                {"input": "What are the key findings in the report?", "action": "[SEARCH_DOC: key findings conclusions results]"},
+                {"input": "Extract dates from my document", "action": "[SEARCH_DOC: dates timeline schedule]"},
+                {"input": "What is the total amount in the invoice?", "action": "[SEARCH_DOC: total amount price invoice]"},
+                {"input": "Read my uploaded text file", "action": "[SEARCH_DOC: full text content]"},
+                {"input": "Analyze the attached document", "action": "[SEARCH_DOC: document analysis overview]"}
+            ],
+            "trigger_keywords": ["read the file", "pdf", "document", "uploaded", "attached", "resume", "summarize the file", "my file", "the report", "invoice", "extract from"]
+        },
+        "SYSTEM": {
+            "description": "Executing OS-level shell commands, installing packages, managing files on the local system.",
+            "tools": ["[RUN_SHELL: command]"],
+            "examples": [
+                {"input": "Install numpy", "action": "[RUN_SHELL: pip install numpy]"},
+                {"input": "What is my IP address?", "action": "[RUN_SHELL: ipconfig]"},
+                {"input": "List files in current directory", "action": "[RUN_SHELL: dir]"},
+                {"input": "Ping google.com", "action": "[RUN_SHELL: ping google.com]"},
+                {"input": "Check disk space", "action": "[RUN_SHELL: wmic logicaldisk get size,freespace,caption]"},
+                {"input": "Install the missing PyPDF2 module", "action": "[RUN_SHELL: pip install PyPDF2]"},
+                {"input": "Show running processes", "action": "[RUN_SHELL: tasklist]"},
+                {"input": "Create a new folder called projects", "action": "[RUN_SHELL: mkdir projects]"},
+                {"input": "Download this package for me", "action": "[RUN_SHELL: pip install <package_name>]"},
+                {"input": "Check Python version", "action": "[RUN_SHELL: python --version]"},
+                {"input": "Kill the process on port 5000", "action": "[RUN_SHELL: netstat -ano | findstr :5000]"},
+                {"input": "Restart the server", "action": "[RUN_SHELL: python main.py]"}
+            ],
+            "trigger_keywords": ["install", "pip", "download", "run", "execute", "shell", "command", "terminal", "modulenotfounderror", "missing module", "system", "disk", "process", "mkdir", "restart"]
+        },
+        "GENERAL": {
+            "description": "General conversation, memory saving, greetings, opinions, creative writing.",
+            "tools": ["[MEM_SAVE: fact]", "[SEARCH: query] (self-correction fallback)"],
+            "examples": [
+                {"input": "Hello!", "action": "Respond conversationally: Hello! How can I help you today?"},
+                {"input": "Remember my name is Musab", "action": "[MEM_SAVE: User's name is Musab]"},
+                {"input": "What can you do?", "action": "Respond conversationally: List capabilities."},
+                {"input": "Write a poem about the ocean", "action": "Respond creatively with a poem about the ocean."},
+                {"input": "Thank you for your help", "action": "Respond conversationally: You're welcome!"},
+                {"input": "Remember I'm working on an ISP management system", "action": "[MEM_SAVE: User is working on an ISP management system]"},
+                {"input": "Save a note: meeting at 3pm tomorrow", "action": "[MEM_SAVE: User has a meeting at 3pm tomorrow]"},
+                {"input": "Tell me a joke", "action": "Respond with a joke."},
+                {"input": "What is your name?", "action": "Respond: I am Nexus, your AI assistant."},
+                {"input": "Help me brainstorm app ideas", "action": "Respond with creative brainstorming."}
+            ],
+            "trigger_keywords": ["hello", "hi", "thanks", "remember", "save", "note", "your name", "what can you", "write a", "brainstorm", "suggest", "opinion", "creative"],
+            "self_correction_rule": "If you are in GENERAL mode but realize you need factual or real-time data to answer accurately, STOP conversing and immediately output: [SEARCH: specific query]"
+        }
+    },
+    "global_rules": {
+        "output_design_protocol": [
+            "Use **bold** for key terms and important words.",
+            "Use Markdown tables for comparisons or structured data.",
+            "Use bullet points for lists instead of paragraphs.",
+            "Keep paragraphs short and punchy (2-3 sentences max).",
+            "Be decisive and authoritative. Remove filler phrases like 'Sure, I can help with that'.",
+            "When presenting search results, always cite the source.",
+            "Use headers (## or ###) to organize long responses."
+        ],
+        "anti_hallucination_rules": [
+            "NEVER guess real-time data (prices, leaders, dates). Always use [SEARCH: ...].",
+            "NEVER apologize repeatedly for tool failures. Fix the issue or use alternate tools.",
+            "If a Python script fails with ModuleNotFoundError, immediately use [RUN_SHELL: pip install <module>].",
+            "If you are unsure about ANY fact, use [SEARCH: ...] to verify before responding.",
+            "NEVER say 'I cannot do that'. Use the available tools to find a solution."
+        ],
+        "loop_prevention": [
+            "Maximum 3 tool attempts per query before giving the best available answer.",
+            "If a tool fails twice, try an alternative approach (e.g., switch from PYTHON to SEARCH).",
+            "Never repeat the same failed action. Adapt and try something different.",
+            "If document reading fails via Python, ALWAYS fall back to [SEARCH_DOC: ...] native tool."
+        ]
+    }
+}

@@ -25,6 +25,42 @@ ngrok.set_auth_token(NGROK_AUTH_TOKEN)
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(TOOLS_FOLDER, exist_ok=True)
 
+# --- INSTRUCTION DATASET (Brain Manual) ---
+INSTRUCTION_DATASET = {}
+try:
+    with open("instructions_dataset.json", "r", encoding="utf-8") as f:
+        INSTRUCTION_DATASET = json.load(f)
+    print("✅ Instruction dataset loaded successfully.")
+except Exception as e:
+    print(f"⚠️ Instruction dataset not found: {e}. Using hardcoded fallbacks.")
+
+def get_route_examples(route_name, max_examples=5):
+    """Pull few-shot examples from the instruction dataset for the router."""
+    try:
+        route_data = INSTRUCTION_DATASET.get("routes", {}).get(route_name, {})
+        examples = route_data.get("examples", [])[:max_examples]
+        return "\n".join([f'  User: "{ex["input"]}" => {ex["action"]}' for ex in examples])
+    except:
+        return ""
+
+def get_global_rules():
+    """Get anti-hallucination and loop prevention rules from the dataset."""
+    try:
+        rules = INSTRUCTION_DATASET.get("global_rules", {})
+        anti_hall = rules.get("anti_hallucination_rules", [])
+        loop_prev = rules.get("loop_prevention", [])
+        combined = anti_hall + loop_prev
+        return "\n".join([f"- {r}" for r in combined])
+    except:
+        return ""
+
+def get_trigger_keywords(route_name):
+    """Get trigger keywords for a specific route from the dataset."""
+    try:
+        return INSTRUCTION_DATASET.get("routes", {}).get(route_name, {}).get("trigger_keywords", [])
+    except:
+        return []
+
 # --- CHROMA DB SETUP (LOCAL RAG) ---
 try:
     chroma_client = chromadb.PersistentClient(path="memory_db_vectors")
@@ -306,17 +342,40 @@ Example: If asked to ping google, output exactly and ONLY:
                 last_msgs = "\n".join([f"- {m}" for m in user_msgs[-3:]]) if user_msgs else "General query"
                 
                 # Check for "Current Event", "System", or "Documents" keywords to bias the router
-                current_event_keywords = ["current", "latest", "now", "who is", "today", "news", "status", "price", "population", "compare", "details of", "how many", "weather"]
-                system_keywords = ["install", "pip", "modulenotfounderror", "missing module", "download"]
+                ds_research_kw = get_trigger_keywords("RESEARCH")
+                ds_system_kw = get_trigger_keywords("SYSTEM")
+                ds_docs_kw = get_trigger_keywords("DOCS")
+                current_event_keywords = list(set(["current", "latest", "now", "who is", "today", "news", "status", "price", "population", "compare", "details of", "how many", "weather"] + ds_research_kw))
+                system_keywords = list(set(["install", "pip", "modulenotfounderror", "missing module", "download"] + ds_system_kw))
+                doc_keywords = list(set(["read the file", "pdf", "document", "uploaded", "resume", "my file", "the report"] + ds_docs_kw))
                 last_user_msg = user_msgs[-1].lower() if user_msgs else ""
                 
                 nudge_research = any(kw in last_user_msg for kw in current_event_keywords)
                 nudge_system = any(kw in last_user_msg for kw in system_keywords)
-                nudge_docs = "has attached the following document" in last_user_msg or "read the file" in last_user_msg or "pdf" in last_user_msg
+                nudge_docs = "has attached the following document" in last_user_msg or any(kw in last_user_msg for kw in doc_keywords)
+                    
+                # Build few-shot examples for the router from the instruction dataset
+                research_examples = get_route_examples("RESEARCH", 3)
+                code_examples = get_route_examples("CODE", 3)
+                docs_examples = get_route_examples("DOCS", 2)
+                system_examples = get_route_examples("SYSTEM", 2)
+                general_examples = get_route_examples("GENERAL", 2)
+
+                few_shot_block = ""
+                if research_examples:
+                    few_shot_block += f"\nExamples for RESEARCH:\n{research_examples}"
+                if code_examples:
+                    few_shot_block += f"\nExamples for CODE:\n{code_examples}"
+                if docs_examples:
+                    few_shot_block += f"\nExamples for DOCS:\n{docs_examples}"
+                if system_examples:
+                    few_shot_block += f"\nExamples for SYSTEM:\n{system_examples}"
+                if general_examples:
+                    few_shot_block += f"\nExamples for GENERAL:\n{general_examples}"
                     
                 router_prompt = f"""You are a routing agent. Read the user's messages to understand the context.
 Categorize the user's LATEST request into EXACTLY ONE of these strings:
-[ROUTE: RESEARCH] - Use for web search, current events, news, or identifying people/leaders.
+[ROUTE: RESEARCH] - Use for web search, current events, news, identifying people/leaders, any factual lookup.
 [ROUTE: CODE] - Use for math, logic, scripting, or python code.
 [ROUTE: DOCS] - Use for searching or reading uploaded documents/PDFS.
 [ROUTE: SYSTEM] - Use for executing local system shell commands (e.g. installing pip packages).
@@ -325,6 +384,7 @@ Categorize the user's LATEST request into EXACTLY ONE of these strings:
 IMPORTANT: If the user asks about anything CURRENT (leaders, dates, news, status), you MUST choose [ROUTE: RESEARCH].
 IMPORTANT: If a Python script previously failed due to a missing module/library, or if the user asks to install/download something, you MUST choose [ROUTE: SYSTEM].
 IMPORTANT: If the user uploaded a document and asks you to read or summarize it, you MUST choose [ROUTE: DOCS].
+{few_shot_block}
 
 Recent User Messages Context:
 {last_msgs}
@@ -384,6 +444,11 @@ Output ONLY the exact category string and nothing else."""
             # Design & Formatting Protocol
             formatting_protocol = "\n\n[OUTPUT DESIGN PROTOCOL]\nWhen giving conversational answers, you MUST look premium and professional. Rule 1: Use bolding for key terms. Rule 2: Use Markdown tables for comparisons or structured data. Rule 3: Use bullet points for lists. Rule 4: Do not output walls of text; use short punchy paragraphs. Rule 5: Be decisive and authoritative; remove filler phrases."
             tool_instructions += formatting_protocol
+
+            # Inject global anti-hallucination and loop prevention rules from dataset
+            global_rules = get_global_rules()
+            if global_rules:
+                tool_instructions += f"\n\n[CRITICAL RULES]\n{global_rules}"
 
             # Inject dynamic sub-agent instructions safely into system prompt
             if len(current_run_msgs) > 0 and current_run_msgs[0]["role"] == "system":
