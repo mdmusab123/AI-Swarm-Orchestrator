@@ -1,6 +1,7 @@
 import json
 from flask import Flask, request, Response, stream_with_context, render_template_string
 import requests
+from pyngrok import ngrok # <-- Add this new import
 
 app = Flask(__name__)
 
@@ -17,14 +18,11 @@ HTML = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Advanced AI Assistant</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Markdown & Security -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     
-    <!-- Highlight.js for Code Blocks -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
@@ -52,7 +50,6 @@ HTML = """
 
 <body class="text-gray-200 h-screen flex overflow-hidden font-sans antialiased bg-[#212121]">
 
-    <!-- Sidebar (Desktop) -->
     <div class="hidden md:flex w-[260px] bg-[#171717] flex-col h-full border-r border-[#333]">
         <div class="p-4">
             <button onclick="startNewChat()" class="flex items-center gap-2 w-full p-3 rounded-lg hover:bg-[#2f2f2f] transition-colors border border-[#424242] text-sm text-gray-300">
@@ -72,15 +69,12 @@ HTML = """
         </div>
     </div>
 
-    <!-- Main Content -->
     <div class="flex-1 flex flex-col h-full relative">
         <div id="chat-container" class="flex-1 overflow-y-auto w-full pb-40 pt-8">
             <div id="chat" class="max-w-3xl mx-auto flex flex-col space-y-8 px-4">
-                <!-- Messages populate here -->
-            </div>
+                </div>
         </div>
 
-        <!-- Input Area -->
         <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#212121] via-[#212121] to-transparent pt-10 pb-8 px-4">
             <div class="max-w-3xl mx-auto relative">
                 <div class="bg-[#2f2f2f] rounded-2xl border border-[#424242] focus-within:border-gray-400 transition-all flex items-end p-2 shadow-2xl">
@@ -99,7 +93,6 @@ HTML = """
         </div>
     </div>
 
-    <!-- Settings Modal -->
     <div id="settings-modal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center backdrop-blur-sm">
         <div class="bg-[#171717] border border-[#333] rounded-2xl w-full max-w-lg p-6 shadow-2xl">
             <div class="flex justify-between items-center mb-6">
@@ -119,7 +112,6 @@ HTML = """
     </div>
 
     <script>
-        // Use standard variable declarations to avoid scope issues
         let chats = [];
         let currentChatId = null;
         let messageHistory = [];
@@ -131,7 +123,6 @@ HTML = """
         const sendBtn = document.getElementById("send-btn");
         const chatListEl = document.getElementById("chat-list");
 
-        // Initialization
         document.addEventListener("DOMContentLoaded", () => {
             const stored = localStorage.getItem('ai_chats_v2');
             chats = stored ? JSON.parse(stored) : [];
@@ -145,13 +136,11 @@ HTML = """
             renderSidebar();
         });
 
-        // Event: Auto-resize textarea
         inputEl.addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = (this.scrollHeight > 200 ? 200 : this.scrollHeight) + 'px';
         });
 
-        // Event: Enter to send
         inputEl.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -251,7 +240,6 @@ HTML = """
             const text = inputEl.value.trim();
             if (!text || sendBtn.disabled) return;
 
-            // Update UI
             inputEl.value = "";
             inputEl.style.height = "auto";
             inputEl.disabled = true;
@@ -260,7 +248,6 @@ HTML = """
             appendMessage("user", text);
             messageHistory.push({ role: "user", content: text });
 
-            // Temporary loading message
             const loadingId = "loading-" + Date.now();
             const aiMsgDiv = appendMessage("ai", "...", loadingId);
             const contentArea = aiMsgDiv.querySelector('.content-area');
@@ -292,7 +279,6 @@ HTML = """
 
                 messageHistory.push({ role: "assistant", content: accumulated });
                 
-                // Update chat title if it's the first message
                 const currentChat = chats.find(c => c.id === currentChatId);
                 if (currentChat && currentChat.title === 'New Chat') {
                     currentChat.title = text.substring(0, 30) + (text.length > 30 ? '...' : '');
@@ -361,5 +347,17 @@ def chat():
     return Response(stream_with_context(ask_ai_stream(messages)), mimetype='text/plain')
 
 if __name__ == "__main__":
-    # Using threaded=True to allow streaming and UI interactions simultaneously
-    app.run(port=5000, debug=True, threaded=True)
+    # 1. Add Ngrok auth token here if you have one (optional but recommended)
+    # ngrok.set_auth_token("YOUR_AUTH_TOKEN_HERE")
+
+    # 2. Open a ngrok tunnel to the dev server
+    public_url = ngrok.connect(5000).public_url
+    
+    print("\n" + "="*60)
+    print(f"🌍 Apnar AI Assistant Internet-e LIVE ache eikhane:")
+    print(f"👉 {public_url} 👈")
+    print("="*60 + "\n")
+
+    # 3. Using threaded=True to allow streaming and UI interactions simultaneously
+    #    CRITICAL: use_reloader=False is required so Ngrok doesn't spawn multiple tunnels
+    app.run(port=5000, debug=True, use_reloader=False, threaded=True)
