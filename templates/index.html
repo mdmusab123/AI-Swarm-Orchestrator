@@ -96,6 +96,13 @@
             <div class="max-w-3xl mx-auto relative group">
                 <div class="absolute -inset-1 bg-gradient-to-r from-purple-600/30 to-indigo-600/30 rounded-3xl blur opacity-25 group-focus-within:opacity-50 transition duration-500"></div>
                 <div class="relative glass-panel rounded-2xl border border-white/10 group-focus-within:border-purple-500/50 transition-all flex items-end p-2 sm:p-3 shadow-2xl">
+                    <!-- File Upload Input Hidden -->
+                    <input type="file" id="file-upload" class="hidden" accept=".pdf,.txt,.md" onchange="handleFileUpload(event)">
+                    
+                    <button onclick="document.getElementById('file-upload').click()" class="p-3 mb-1 ml-1 bg-white/10 text-zinc-300 hover:bg-white/20 rounded-xl transition-all shadow-sm shrink-0 tooltip" title="Attach Document">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                    </button>
+
                     <textarea 
                         id="input" 
                         rows="1"
@@ -265,6 +272,7 @@
             div.innerHTML = `
                 ${avatar}
                 <div class="flex-1 min-w-0 max-w-full">
+                    <div class="status-area flex flex-col items-start"></div>
                     <div class="prose prose-invert prose-zinc max-w-none text-[15px] leading-relaxed content-area text-zinc-300">
                         ${isAI && content !== '...' ? formatMarkdown(content) : content}
                     </div>
@@ -310,8 +318,8 @@
 
             const aiMsgDiv = appendMessage("ai", "...");
             const contentArea = aiMsgDiv.querySelector('.content-area');
+            const statusArea = aiMsgDiv.querySelector('.status-area');
             let accumulatedContent = "";
-            let statusHTML = "";
 
             try {
                 let sPrompt = systemPrompt;
@@ -320,6 +328,7 @@
                     sPrompt += `\nYou have tools enabled.
 To search the web, output exactly: [SEARCH: query] 
 To save memory, output exactly: [MEM_SAVE: fact]
+To search within uploaded user documents, output exactly: [SEARCH_DOC: query]
 Only output one tool per response. Tools are executed and results are sent back.`;
                 }
 
@@ -351,17 +360,16 @@ Only output one tool per response. Tools are executed and results are sent back.
                         try {
                             const data = JSON.parse(line);
                             if (data.type === 'status') {
-                                statusHTML += createStatusBadge(data.text);
-                                contentArea.innerHTML = statusHTML + formatMarkdown(accumulatedContent);
+                                statusArea.insertAdjacentHTML('beforeend', createStatusBadge(data.text));
                             } else if (data.type === 'content') {
                                 accumulatedContent += data.text;
-                                contentArea.innerHTML = statusHTML + formatMarkdown(accumulatedContent);
+                                contentArea.innerHTML = formatMarkdown(accumulatedContent);
                                 scrollToBottom();
                             }
                         } catch(e) {
                             // In case of fragmented JSON, append as text (fallback)
                             accumulatedContent += line;
-                            contentArea.innerHTML = statusHTML + formatMarkdown(accumulatedContent);
+                            contentArea.innerHTML = formatMarkdown(accumulatedContent);
                         }
                     }
                 }
@@ -389,6 +397,54 @@ Only output one tool per response. Tools are executed and results are sent back.
                 document.querySelectorAll('.prose pre code').forEach((block) => {
                     hljs.highlightElement(block);
                 });
+            }
+        }
+
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            inputEl.disabled = true;
+            sendBtn.disabled = true;
+            
+            const loadingMsgId = "upload-" + Date.now();
+            appendMessage("user", `📎 Attached Document: **${file.name}**`);
+            const aiMsgDiv = appendMessage("ai", "...", loadingMsgId);
+            const contentArea = aiMsgDiv.querySelector('.content-area');
+            const statusArea = aiMsgDiv.querySelector('.status-area');
+            
+            statusArea.innerHTML = createStatusBadge(`Processing & reading ${file.name}...`);
+            contentArea.innerHTML = "";
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    statusArea.innerHTML = createStatusBadge(`✅ Document embedded successfully.`, `<svg class="w-2 h-2 text-green-400" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>`);
+                    contentArea.innerHTML = formatMarkdown(data.message);
+                    messageHistory.push({ role: "system", content: `System Notice: The user just uploaded the document '${file.name}'. You can now search it using [SEARCH_DOC: query].` });
+                } else {
+                    throw new Error(data.error || "Upload failed");
+                }
+            } catch (err) {
+                console.error(err);
+                statusArea.innerHTML = createStatusBadge(`❌ Upload Failed`);
+                contentArea.innerHTML = `<span class="text-red-400">Error: ${err.message}</span>`;
+            } finally {
+                inputEl.disabled = false;
+                sendBtn.disabled = false;
+                document.getElementById('file-upload').value = ''; // reset input
+                inputEl.focus();
+                saveState();
+                scrollToBottom();
             }
         }
 

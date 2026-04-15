@@ -2,3 +2,9 @@
 /isp-portal.7z
 /mic_test.py
 /upload.zip
+memory.db
+/uploads/
+/memory_db_vectors/
+__pycache__/
+*.pyc
+.env
