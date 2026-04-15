@@ -223,7 +223,7 @@ def execute_shell(command):
         return f"Shell Execution Error: {str(e)}"
 
 # --- AGENTIC LOOP AND PARSER ---
-def ask_ai_stream(messages, target_model=MODEL, tools_enabled=True):
+def ask_ai_stream(messages, target_model=MODEL, tools_enabled=True, router_enabled=True, force_web_search=False):
     if tools_enabled:
         user_msgs = [m["content"] for m in messages if m["role"] == "user"]
         if user_msgs:
@@ -262,12 +262,21 @@ def ask_ai_stream(messages, target_model=MODEL, tools_enabled=True):
         
         # --- ROUTER AGENT LOGIC ---
         if tools_enabled:
-            yield json.dumps({"type": "status", "text": "🧠 Router Agent analyzing intent..."}) + "\n"
-            
-            user_msgs = [m["content"] for m in current_run_msgs if m["role"] == "user"]
-            last_msg = user_msgs[-1] if user_msgs else "General query"
-                
-            router_prompt = f"""You are a routing agent. Read the user's message.
+            if not router_enabled:
+                os_type = "powershell" if platform.system() == "Windows" else "bash"
+                tool_instructions = f"""You have tools enabled. You MUST use one of these tools if requested:
+To search the web: [SEARCH: query]
+To read the full text of an article: [READ_URL: https://...]
+To save memory: [MEM_SAVE: fact]
+To search within uploaded user documents: [SEARCH_DOC: query]
+To run python code: [PYTHON: print("hello")]
+To run {os_type} system commands (WAIT for user permission!): [RUN_SHELL: ping google.com]
+Only output one tool per response."""
+            else:
+                user_msgs = [m["content"] for m in current_run_msgs if m["role"] == "user"]
+                last_msg = user_msgs[-1] if user_msgs else "General query"
+                    
+                router_prompt = f"""You are a routing agent. Read the user's message.
 Categorize the request into EXACTLY ONE of these strings based on what it needs:
 [ROUTE: RESEARCH] - Requires searching the internet or reading URLs to get current info.
 [ROUTE: CODE] - Requires mathematical calculation, logic, data analysis, or executing python code.
@@ -279,41 +288,42 @@ User Message: {last_msg}
 
 Output ONLY the exact category string and nothing else. Example: [ROUTE: GENERAL]"""
 
-            try:
-                router_res = requests.post(API_URL, json={
-                    "model": target_model, 
-                    "messages": [{"role": "user", "content": router_prompt}], 
-                    "stream": False
-                }, timeout=10)
-                router_data = router_res.json()
-                route_text = router_data.get("message", {}).get("content", "").strip()
-            except Exception as e:
-                route_text = "[ROUTE: GENERAL]" # fallback
+                if force_web_search:
+                    route_text = "[ROUTE: RESEARCH]"
+                else:
+                    try:
+                        router_res = requests.post(API_URL, json={
+                            "model": target_model, 
+                            "messages": [{"role": "user", "content": router_prompt}], 
+                            "stream": False
+                        }, timeout=10)
+                        router_data = router_res.json()
+                        route_text = router_data.get("message", {}).get("content", "").strip()
+                    except Exception as e:
+                        route_text = "[ROUTE: GENERAL]" # fallback
+                    
+                if "[ROUTE: RESEARCH]" in route_text:
+                    cat = "RESEARCH"
+                    icon = "🔍 Explorer Node"
+                    tool_instructions = "You are the Explorer Node. You MUST use these tools if necessary:\nTo search the web: [SEARCH: query]\nTo read an article: [READ_URL: url]\nOutput only one tool per response."
+                elif "[ROUTE: CODE]" in route_text:
+                    cat = "CODE"
+                    icon = "🤖 Coder Node"
+                    tool_instructions = "You are the Coder Node. You MUST use this tool to calculate or analyze:\nTo run python code: [PYTHON: print('hello')]\nOutput only one tool per response."
+                elif "[ROUTE: DOCS]" in route_text:
+                    cat = "DOCS"
+                    icon = "📚 Document Search Node"
+                    tool_instructions = "You are the Document Node. You MUST use this tool to answer file questions:\nTo search documents: [SEARCH_DOC: query]\nOutput only one tool per response."
+                elif "[ROUTE: SYSTEM]" in route_text:
+                    cat = "SYSTEM"
+                    icon = "💻 Administrator Node"
+                    os_type = "powershell" if platform.system() == "Windows" else "bash"
+                    tool_instructions = f"You are the System Administrator Node. You MUST use this tool to manage the computer natively:\nTo run {os_type} commands: [RUN_SHELL: ping google.com]\nWait for the user's explicit permission. Output only one tool per response."
+                else:
+                    cat = "GENERAL"
+                    icon = "🧠 General Node"
+                    tool_instructions = "You are the General Node. You MUST use this tool if explicitly asked to remember something:\nTo save memory: [MEM_SAVE: fact]\nOutput only one tool per response."
                 
-            if "[ROUTE: RESEARCH]" in route_text:
-                cat = "RESEARCH"
-                icon = "🔍 Explorer Node"
-                tool_instructions = "You are the Explorer Node. You MUST use these tools if necessary:\nTo search the web: [SEARCH: query]\nTo read an article: [READ_URL: url]\nOutput only one tool per response."
-            elif "[ROUTE: CODE]" in route_text:
-                cat = "CODE"
-                icon = "🤖 Coder Node"
-                tool_instructions = "You are the Coder Node. You MUST use this tool to calculate or analyze:\nTo run python code: [PYTHON: print('hello')]\nOutput only one tool per response."
-            elif "[ROUTE: DOCS]" in route_text:
-                cat = "DOCS"
-                icon = "📚 Document Search Node"
-                tool_instructions = "You are the Document Node. You MUST use this tool to answer file questions:\nTo search documents: [SEARCH_DOC: query]\nOutput only one tool per response."
-            elif "[ROUTE: SYSTEM]" in route_text:
-                cat = "SYSTEM"
-                icon = "💻 Administrator Node"
-                os_type = "powershell" if platform.system() == "Windows" else "bash"
-                tool_instructions = f"You are the System Administrator Node. You MUST use this tool to manage the computer natively:\nTo run {os_type} commands: [RUN_SHELL: ping google.com]\nWait for the user's explicit permission. Output only one tool per response."
-            else:
-                cat = "GENERAL"
-                icon = "🧠 General Node"
-                tool_instructions = "You are the General Node. You MUST use this tool if explicitly asked to remember something:\nTo save memory: [MEM_SAVE: fact]\nOutput only one tool per response."
-                
-            yield json.dumps({"type": "status", "text": f"🔀 Task delegated to: {icon}"}) + "\n"
-            
             # Inject dynamic sub-agent instructions safely into system prompt
             if len(current_run_msgs) > 0 and current_run_msgs[0]["role"] == "system":
                 current_run_msgs[0]["content"] += "\n\n" + tool_instructions
@@ -461,8 +471,10 @@ def chat():
     messages = data.get("messages", [])
     tools_enabled = data.get("tools_enabled", True)
     target_model = data.get("model", MODEL)
+    router_enabled = data.get("router_enabled", True)
+    force_web_search = data.get("force_web_search", False)
     
-    return Response(stream_with_context(ask_ai_stream(messages, target_model, tools_enabled)), mimetype='application/x-ndjson')
+    return Response(stream_with_context(ask_ai_stream(messages, target_model, tools_enabled, router_enabled, force_web_search)), mimetype='application/x-ndjson')
 
 if __name__ == "__main__":
     try:

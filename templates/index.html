@@ -9,49 +9,154 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tokyo-night-dark.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #09090b; }
+        *, *::before, *::after { box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background-color: #0c0c0f; margin: 0; }
         h1, h2, h3, .font-display { font-family: 'Outfit', sans-serif; }
 
-        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
-        
-        .glass-panel {
-            background: rgba(24, 24, 27, 0.6);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+
+        /* --- Sidebar --- */
+        .sidebar {
+            background: linear-gradient(180deg, #111114 0%, #0e0e11 100%);
+            border-right: 1px solid rgba(255,255,255,0.06);
+        }
+        .sidebar-item {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .sidebar-item:hover { background: rgba(255,255,255,0.04); }
+        .sidebar-item.active { 
+            background: rgba(45, 212, 191, 0.08);
+            border-color: rgba(45, 212, 191, 0.15);
         }
 
-        .prose pre { background-color: #18181b !important; padding: 1rem; border-radius: 0.75rem; overflow-x: auto; border: 1px solid rgba(255, 255, 255, 0.05); margin-top: 1em; margin-bottom: 1em; }
-        .prose code { background-color: rgba(255,255,255,0.1); padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-family: monospace; font-size: 0.9em; }
+        /* --- Main Chat --- */
+        .chat-area-bg {
+            background-color: #0c0c0f;
+            background-image: radial-gradient(ellipse at 50% 0%, rgba(45, 212, 191, 0.03) 0%, transparent 60%);
+        }
+
+        /* --- Glassmorphism --- */
+        .glass-panel {
+            background: rgba(18, 18, 22, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        /* --- Prose / Markdown --- */
+        .prose pre { background-color: #141418 !important; padding: 1rem; border-radius: 0.75rem; overflow-x: auto; border: 1px solid rgba(255, 255, 255, 0.06); margin-top: 1em; margin-bottom: 1em; }
+        .prose code { background-color: rgba(255,255,255,0.08); padding: 0.15rem 0.4rem; border-radius: 0.3rem; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.85em; }
         .prose pre code { background-color: transparent; padding: 0; }
-        
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(10px); }
+        .prose p { margin-bottom: 0.6em; }
+        .prose ul, .prose ol { margin-top: 0.5em; margin-bottom: 0.5em; }
+
+        /* --- Animations --- */
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(12px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .anim-slide-in { animation: slideIn 0.3s ease-out forwards; }
+        .anim-slide-in { animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-        @keyframes pulse-glow {
-            0%, 100% { opacity: 0.5; box-shadow: 0 0 10px rgba(139, 92, 246, 0.2); }
-            50% { opacity: 1; box-shadow: 0 0 20px rgba(139, 92, 246, 0.6); }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; background-color: #a78bfa; animation: pulse-glow 2s infinite; }
+        .anim-fade { animation: fadeIn 0.5s ease forwards; }
 
-        textarea { resize: none; transition: height 0.2s ease, border-color 0.2s; }
-        
-        /* Shimmer loading effect */
+        /* --- Thinking Dots --- */
+        .dot-typing { display: inline-flex; align-items: center; gap: 5px; padding: 8px 4px; }
+        .dot-typing .dot {
+            width: 7px; height: 7px;
+            background: linear-gradient(135deg, #2dd4bf, #14b8a6);
+            border-radius: 50%;
+            animation: dotPulse 1.4s infinite ease-in-out both;
+        }
+        .dot-typing .dot:nth-child(1) { animation-delay: -0.32s; }
+        .dot-typing .dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes dotPulse {
+            0%, 80%, 100% { transform: scale(0.4); opacity: 0.4; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        /* --- Status Badge --- */
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+        .status-dot { 
+            width: 6px; height: 6px; border-radius: 50%; 
+            background: #2dd4bf; 
+            animation: pulseGlow 2s infinite; 
+            box-shadow: 0 0 6px rgba(45, 212, 191, 0.4);
+        }
+
+        /* --- Input --- */
+        textarea { resize: none; transition: height 0.2s ease; }
+
+        /* --- Welcome Hero --- */
+        .welcome-hero {
+            animation: fadeIn 0.6s ease forwards;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+        .float-anim { animation: float 4s ease-in-out infinite; }
+
+        /* --- Suggestion Cards --- */
+        .suggestion-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+        .suggestion-card:hover {
+            background: rgba(45, 212, 191, 0.06);
+            border-color: rgba(45, 212, 191, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(45, 212, 191, 0.06);
+        }
+
+        /* --- Message Bubbles --- */
+        .msg-ai {
+            background: transparent;
+        }
+        .msg-user-bubble {
+            background: linear-gradient(135deg, rgba(45, 212, 191, 0.12), rgba(20, 184, 166, 0.08));
+            border: 1px solid rgba(45, 212, 191, 0.12);
+        }
+
+        /* --- Send Button --- */
+        .send-btn {
+            background: linear-gradient(135deg, #2dd4bf, #14b8a6);
+            color: #0c0c0f;
+            transition: all 0.2s ease;
+        }
+        .send-btn:hover { box-shadow: 0 0 20px rgba(45, 212, 191, 0.3); transform: scale(1.05); }
+        .send-btn:disabled { opacity: 0.3; transform: none; box-shadow: none; }
+
+        /* --- Web Search Active --- */
+        .web-search-active {
+            background: rgba(59, 130, 246, 0.2) !important;
+            color: #60a5fa !important;
+            border-color: rgba(59, 130, 246, 0.3) !important;
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.15);
+        }
+
+        /* Shimmer */
         .shimmer {
-            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 100%);
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.03) 50%, rgba(255,255,255,0) 100%);
             background-size: 200% 100%;
             animation: shimmer 1.5s infinite;
         }
@@ -59,100 +164,134 @@
     </style>
 </head>
 
-<body class="text-zinc-300 h-screen flex overflow-hidden antialiased selection:bg-purple-500/30">
+<body class="text-zinc-300 h-screen flex overflow-hidden antialiased selection:bg-teal-500/30">
 
     <!-- Sidebar -->
-    <div class="hidden md:flex w-[280px] glass-panel z-10 flex-col h-full border-r border-white/10">
-        <div class="p-5 flex items-center justify-between">
-            <h1 class="font-display font-semibold text-xl tracking-tight bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">Nexus</h1>
-            <button onclick="startNewChat()" class="p-2 rounded-lg hover:bg-white/10 transition-colors tooltip" title="New Chat">
-                <svg class="w-5 h-5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    <div class="hidden md:flex w-[260px] sidebar z-10 flex-col h-full">
+        <!-- Logo -->
+        <div class="p-5 pb-3 flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/20">
+                <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            </div>
+            <div>
+                <h1 class="font-display font-bold text-[17px] text-white tracking-tight">Nexus</h1>
+                <p class="text-[10px] text-zinc-500 font-medium uppercase tracking-widest">AI Engine</p>
+            </div>
+        </div>
+
+        <!-- New Chat -->
+        <div class="px-3 mb-3">
+            <button onclick="startNewChat()" class="w-full flex items-center gap-2.5 p-2.5 rounded-xl text-sm font-medium text-zinc-300 hover:bg-white/5 transition-all border border-white/5 hover:border-white/10">
+                <svg class="w-4 h-4 text-teal-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                New Chat
             </button>
         </div>
+        
+        <!-- Chat History -->
         <div class="flex-1 overflow-y-auto px-3 pb-4">
-            <p class="text-[11px] font-semibold text-zinc-500 mb-3 px-2 uppercase tracking-wider">Conversations</p>
-            <div id="chat-list" class="flex flex-col space-y-1"></div>
+            <p class="text-[10px] font-semibold text-zinc-600 mb-2 px-2 uppercase tracking-widest">History</p>
+            <div id="chat-list" class="flex flex-col space-y-0.5"></div>
         </div>
-        <div class="p-4 border-t border-white/10">
-            <button onclick="toggleSettings()" class="flex items-center gap-3 w-full p-2.5 rounded-xl hover:bg-white/5 transition-colors text-sm text-zinc-300 font-medium">
-                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-900 flex items-center justify-center border border-white/10 shrink-0">
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-                </div>
+
+        <!-- Settings Button -->
+        <div class="p-3 border-t border-white/5">
+            <button onclick="toggleSettings()" class="flex items-center gap-3 w-full p-2.5 rounded-xl hover:bg-white/5 transition-colors text-sm text-zinc-400 font-medium">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
                 Settings
             </button>
         </div>
     </div>
 
     <!-- Main Chat Area -->
-    <div class="flex-1 flex flex-col h-full relative bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed" style="background-color: #09090b; background-blend-mode: overlay;">
-        <div id="chat-container" class="flex-1 overflow-y-auto w-full pb-44 pt-8 px-4 sm:px-6">
-            <div id="chat" class="max-w-4xl mx-auto flex flex-col space-y-8">
+    <div class="flex-1 flex flex-col h-full relative chat-area-bg">
+        <div id="chat-container" class="flex-1 overflow-y-auto w-full pb-44 pt-6 px-4 sm:px-6">
+            <div id="chat" class="max-w-3xl mx-auto flex flex-col space-y-6">
                 <!-- Chat messages injected here -->
             </div>
         </div>
 
         <!-- Input Area -->
-        <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-zinc-950 via-zinc-950/90 to-transparent pt-12 pb-6 px-4 sm:px-6 z-20">
-            <div class="max-w-3xl mx-auto relative group">
-                <div class="absolute -inset-1 bg-gradient-to-r from-purple-600/30 to-indigo-600/30 rounded-3xl blur opacity-25 group-focus-within:opacity-50 transition duration-500"></div>
-                <div class="relative glass-panel rounded-2xl border border-white/10 group-focus-within:border-purple-500/50 transition-all flex flex-col p-2 sm:p-3 shadow-2xl">
+        <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#0c0c0f] via-[#0c0c0f]/95 to-transparent pt-16 pb-6 px-4 sm:px-6 z-20">
+            <div class="max-w-3xl mx-auto">
+                <div class="relative glass-panel rounded-2xl group-focus-within:border-teal-500/30 transition-all flex flex-col p-2.5 shadow-2xl shadow-black/40">
                     <div id="staged-files" class="flex flex-wrap gap-2 mb-2 px-1 empty:hidden"></div>
                     
-                    <div class="flex items-end">
+                    <div class="flex items-end gap-1">
                         <!-- File Upload Input Hidden -->
                         <input type="file" id="file-upload" class="hidden" accept=".pdf,.txt,.md,image/*" onchange="handleFileUpload(event)">
                         
-                        <button onclick="document.getElementById('file-upload').click()" class="p-3 mb-1 ml-1 bg-white/10 text-zinc-300 hover:bg-white/20 rounded-xl transition-all shadow-sm shrink-0 tooltip" title="Attach Document">
+                        <button onclick="document.getElementById('file-upload').click()" class="p-2.5 mb-0.5 text-zinc-500 hover:text-zinc-300 hover:bg-white/5 rounded-xl transition-all shrink-0" title="Attach Document">
                             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                        </button>
+                        
+                        <button id="web-search-btn" onclick="toggleWebSearch()" class="p-2.5 mb-0.5 text-zinc-500 hover:text-zinc-300 hover:bg-white/5 rounded-xl transition-all shrink-0 flex items-center" title="Force Web Search">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
                         </button>
 
                         <textarea 
                             id="input" 
                             rows="1"
-                            placeholder="Message Nexus..." 
-                            class="w-full max-h-[200px] bg-transparent text-zinc-100 placeholder-zinc-500 px-3 py-3 border-none outline-none focus:ring-0 text-[15px] leading-relaxed"
+                            placeholder="Start your conversation..." 
+                            class="w-full max-h-[200px] bg-transparent text-zinc-100 placeholder-zinc-600 px-3 py-2.5 border-none outline-none focus:ring-0 text-[15px] leading-relaxed"
                         ></textarea>
                         
-                        <button id="send-btn" onclick="sendMessage()" class="p-3 mb-1 mr-1 bg-white text-zinc-900 hover:bg-zinc-200 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm shrink-0">
+                        <button id="send-btn" onclick="sendMessage()" class="send-btn p-2.5 mb-0.5 rounded-xl disabled:cursor-not-allowed shrink-0">
                             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
                         </button>
                     </div>
                 </div>
+                <!-- Quick Suggestions beneath input -->
+                <div id="quick-suggestions" class="flex justify-center gap-2 mt-3 flex-wrap"></div>
             </div>
         </div>
     </div>
 
     <!-- Settings Modal -->
-    <div id="settings-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-md opacity-0 transition-opacity">
-        <div class="bg-zinc-900 border border-white/10 rounded-2xl w-full max-w-lg p-6 shadow-2xl transform scale-95 transition-transform">
+    <div id="settings-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-md opacity-0 transition-opacity duration-300">
+        <div class="bg-[#141418] border border-white/8 rounded-2xl w-full max-w-lg p-6 shadow-2xl shadow-black/60 transform scale-95 transition-transform duration-300">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-display font-semibold">Settings</h2>
-                <button onclick="toggleSettings()" class="text-zinc-400 hover:text-white p-1 rounded-md hover:bg-white/10 transition-colors">
+                <h2 class="text-lg font-display font-semibold text-white">Settings</h2>
+                <button onclick="toggleSettings()" class="text-zinc-500 hover:text-white p-1.5 rounded-lg hover:bg-white/5 transition-colors">
                     <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
             </div>
-            <div class="space-y-5">
+            <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-zinc-400 mb-2">System Instructions</label>
-                    <textarea id="sys-prompt" rows="5" class="w-full bg-zinc-950 text-zinc-200 border border-white/10 rounded-xl p-4 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all resize-none text-sm" placeholder="You are Nexus..."></textarea>
+                    <label class="block text-xs font-semibold text-zinc-500 mb-1.5 uppercase tracking-wider">System Instructions</label>
+                    <textarea id="sys-prompt" rows="4" class="w-full bg-black/30 text-zinc-200 border border-white/8 rounded-xl p-3.5 focus:border-teal-500/40 focus:ring-1 focus:ring-teal-500/20 outline-none transition-all resize-none text-sm" placeholder="You are Nexus..."></textarea>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-zinc-400 mb-2">AI Model</label>
-                    <select id="model-select" class="w-full bg-zinc-950 text-zinc-200 border border-white/10 rounded-xl p-3 focus:border-purple-500/50 outline-none appearance-none cursor-pointer text-sm">
+                    <label class="block text-xs font-semibold text-zinc-500 mb-1.5 uppercase tracking-wider">Model</label>
+                    <select id="model-select" class="w-full bg-black/30 text-zinc-200 border border-white/8 rounded-xl p-3 focus:border-teal-500/40 outline-none appearance-none cursor-pointer text-sm">
                         <option value="gemma4:e2b">Loading models...</option>
                     </select>
                 </div>
-                <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+                
+                <!-- Deep Tools Toggle -->
+                <div class="flex items-center justify-between p-3.5 rounded-xl bg-white/[0.02] border border-white/5">
                     <div>
-                        <p class="text-sm font-medium text-white">Enable Deep Tools</p>
-                        <p class="text-xs text-zinc-500">Allows AI to search web and access DB memory.</p>
+                        <p class="text-sm font-medium text-zinc-200">Deep Tools</p>
+                        <p class="text-xs text-zinc-600 mt-0.5">Web search, document RAG, memory, shell.</p>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" id="tools-toggle" checked class="sr-only peer">
-                        <div class="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
+                        <div class="w-11 h-6 bg-zinc-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-500"></div>
                     </label>
                 </div>
-                <button onclick="saveSettings()" class="w-full bg-white text-zinc-900 hover:bg-zinc-200 font-medium py-3 rounded-xl transition-colors mt-2 shadow-sm">Save Preferences</button>
+
+                <!-- Swarm Orchestration Toggle -->
+                <div class="flex items-center justify-between p-3.5 rounded-xl bg-white/[0.02] border border-white/5">
+                    <div>
+                        <p class="text-sm font-medium text-zinc-200">Swarm Orchestration</p>
+                        <p class="text-xs text-zinc-600 mt-0.5">Multi-Agent Router (adds ~1s latency).</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="router-toggle" checked class="sr-only peer">
+                        <div class="w-11 h-6 bg-zinc-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-500"></div>
+                    </label>
+                </div>
+
+                <button onclick="saveSettings()" class="w-full bg-gradient-to-r from-teal-500 to-emerald-500 text-white font-semibold py-3 rounded-xl transition-all mt-2 shadow-lg shadow-teal-500/20 hover:shadow-teal-500/30 hover:brightness-110">Save Preferences</button>
             </div>
         </div>
     </div>
@@ -165,7 +304,9 @@
         let stagedImages = []; // Track base64 image strings
         let systemPrompt = localStorage.getItem('ai_sys_prompt') || '';
         let toolsEnabled = localStorage.getItem('ai_tools_enabled') !== 'false';
+        let routerEnabled = localStorage.getItem('ai_router_enabled') !== 'false';
         let activeModel = localStorage.getItem('ai_model') || 'gemma4:e2b';
+        let forceWebSearch = false;
 
         const chatEl = document.getElementById("chat");
         const chatContainer = document.getElementById("chat-container");
@@ -178,6 +319,7 @@
             chats = stored ? JSON.parse(stored) : [];
             document.getElementById("sys-prompt").value = systemPrompt;
             document.getElementById("tools-toggle").checked = toolsEnabled;
+            document.getElementById("router-toggle").checked = routerEnabled;
             fetchModels();
             
             if (chats.length === 0) startNewChat();
@@ -238,11 +380,23 @@
         function saveSettings() {
             systemPrompt = document.getElementById("sys-prompt").value;
             toolsEnabled = document.getElementById("tools-toggle").checked;
+            routerEnabled = document.getElementById("router-toggle").checked;
             activeModel = document.getElementById("model-select").value;
             localStorage.setItem('ai_sys_prompt', systemPrompt);
             localStorage.setItem('ai_tools_enabled', toolsEnabled);
+            localStorage.setItem('ai_router_enabled', routerEnabled);
             localStorage.setItem('ai_model', activeModel);
             toggleSettings();
+        }
+
+        function toggleWebSearch() {
+            forceWebSearch = !forceWebSearch;
+            const btn = document.getElementById('web-search-btn');
+            if (forceWebSearch) {
+                btn.classList.add('web-search-active');
+            } else {
+                btn.classList.remove('web-search-active');
+            }
         }
 
         function startNewChat() {
@@ -260,11 +414,56 @@
             chatEl.innerHTML = "";
             
             if (messageHistory.length === 0) {
-                appendMessage("ai", "Greetings. I am Nexus, your advanced assistant. How may I assist you today?");
+                showWelcomeHero();
             } else {
+                hideWelcomeHero();
                 messageHistory.forEach(msg => appendMessage(msg.role, msg.content));
             }
             renderSidebar();
+        }
+
+        function showWelcomeHero() {
+            const hero = document.createElement('div');
+            hero.id = 'welcome-hero';
+            hero.className = 'welcome-hero flex flex-col items-center justify-center text-center pt-16 sm:pt-24 pb-8';
+            hero.innerHTML = `
+                <div class="float-anim mb-6">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center shadow-2xl shadow-teal-500/25">
+                        <svg class="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                    </div>
+                </div>
+                <h2 class="font-display font-bold text-3xl sm:text-4xl text-white mb-3 tracking-tight">How can I help today?</h2>
+                <p class="text-zinc-500 text-sm sm:text-base max-w-md leading-relaxed">Nexus is ready for your next big idea. Ask about code, research, design, or anything in between.</p>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-10 w-full max-w-xl px-4">
+                    <div class="suggestion-card rounded-xl p-4 text-left" onclick="useSuggestion('Search the web for the latest AI news today')">
+                        <div class="text-teal-400 mb-2"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></div>
+                        <p class="text-xs font-semibold text-zinc-300">Web Research</p>
+                        <p class="text-[11px] text-zinc-600 mt-1">"Latest AI news today..."</p>
+                    </div>
+                    <div class="suggestion-card rounded-xl p-4 text-left" onclick="useSuggestion('Write a Python script to sort a list of numbers and find the median')">
+                        <div class="text-teal-400 mb-2"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg></div>
+                        <p class="text-xs font-semibold text-zinc-300">Code Generation</p>
+                        <p class="text-[11px] text-zinc-600 mt-1">"Write a Python script..."</p>
+                    </div>
+                    <div class="suggestion-card rounded-xl p-4 text-left" onclick="useSuggestion('Remember that my favorite programming language is Python')">
+                        <div class="text-teal-400 mb-2"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-1.02-1-1.73a2 2 0 0 1 2-2z"/></svg></div>
+                        <p class="text-xs font-semibold text-zinc-300">Memory</p>
+                        <p class="text-[11px] text-zinc-600 mt-1">"Remember that I..."</p>
+                    </div>
+                </div>
+            `;
+            chatEl.appendChild(hero);
+        }
+
+        function hideWelcomeHero() {
+            const hero = document.getElementById('welcome-hero');
+            if (hero) hero.remove();
+        }
+
+        function useSuggestion(text) {
+            inputEl.value = text;
+            inputEl.focus();
         }
 
         function renderSidebar() {
@@ -272,8 +471,8 @@
             chats.forEach(chat => {
                 const item = document.createElement('div');
                 const active = chat.id === currentChatId;
-                item.className = `p-3 rounded-xl text-sm transition-all mb-1 font-medium flex justify-between items-center group ${
-                    active ? 'bg-white/10 text-white shadow-sm border border-white/5' : 'hover:bg-white/5 text-zinc-400 border border-transparent'
+                item.className = `sidebar-item p-2.5 rounded-xl text-[13px] mb-0.5 font-medium flex justify-between items-center group border border-transparent ${
+                    active ? 'active text-white' : 'text-zinc-500 hover:text-zinc-300'
                 }`;
                 
                 const titleSpan = document.createElement('span');
@@ -282,7 +481,7 @@
                 titleSpan.onclick = () => loadChat(chat.id);
                 
                 const deleteBtn = document.createElement('button');
-                deleteBtn.className = "opacity-0 group-hover:opacity-100 p-1.5 hover:bg-white/10 rounded-md text-zinc-500 hover:text-red-400 transition-all ml-2";
+                deleteBtn.className = "opacity-0 group-hover:opacity-100 p-1 hover:bg-white/10 rounded-md text-zinc-600 hover:text-red-400 transition-all ml-2";
                 deleteBtn.innerHTML = `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
                 deleteBtn.title = "Delete Chat";
                 deleteBtn.onclick = (e) => deleteChat(e, chat.id);
@@ -308,7 +507,7 @@
 
         function createStatusBadge(text, iconStr) {
             return `
-                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-medium mb-3 anim-slide-in">
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-500/8 border border-teal-500/15 text-teal-300 text-xs font-medium mb-2 anim-slide-in">
                     ${iconStr || '<div class="status-dot"></div>'}
                     ${text}
                 </div>
@@ -316,24 +515,27 @@
         }
 
         function appendMessage(role, content, id = null) {
+            hideWelcomeHero();
             const div = document.createElement("div");
-            div.className = "flex gap-4 w-full group anim-slide-in";
+            div.className = "flex gap-3.5 w-full anim-slide-in";
             if (id) div.id = id;
 
             const isAI = role === 'ai';
             
             let avatar;
             if (isAI) {
-                avatar = `<div class="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shrink-0 shadow-lg shadow-purple-500/20"><svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-1.02-1-1.73a2 2 0 0 1 2-2zM9 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm6 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg></div>`;
+                avatar = `<div class="w-8 h-8 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center shrink-0 shadow-md shadow-teal-500/15 mt-0.5"><svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>`;
             } else {
-                avatar = `<div class="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center shrink-0 text-xs font-bold border border-white/10 text-zinc-300 shadow-sm">U</div>`;
+                avatar = `<div class="w-8 h-8 rounded-xl bg-zinc-800/80 flex items-center justify-center shrink-0 text-xs font-bold border border-white/8 text-zinc-400 mt-0.5">U</div>`;
             }
+
+            const bubbleClass = isAI ? 'msg-ai' : 'msg-user-bubble rounded-2xl p-4';
 
             div.innerHTML = `
                 ${avatar}
-                <div class="flex-1 min-w-0 max-w-full">
+                <div class="flex-1 min-w-0 max-w-full ${bubbleClass}">
                     <div class="status-area flex flex-col items-start"></div>
-                    <div class="prose prose-invert prose-zinc max-w-none text-[15px] leading-relaxed content-area text-zinc-300">
+                    <div class="prose prose-invert prose-zinc max-w-none text-[14.5px] leading-relaxed content-area text-zinc-300">
                         ${isAI && content !== '...' ? formatMarkdown(content) : content}
                     </div>
                 </div>
@@ -414,7 +616,7 @@
                 messageHistory.push({ role: "user", content: hiddenText });
             }
 
-            const aiMsgDiv = appendMessage("ai", "...");
+            const aiMsgDiv = appendMessage("ai", '<div class="dot-typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>');
             const contentArea = aiMsgDiv.querySelector('.content-area');
             const statusArea = aiMsgDiv.querySelector('.status-area');
             let accumulatedContent = "";
@@ -432,7 +634,13 @@
                 const response = await fetch("/chat", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ messages: fullHistory, tools_enabled: toolsEnabled, model: activeModel })
+                    body: JSON.stringify({ 
+                        messages: fullHistory, 
+                        tools_enabled: toolsEnabled, 
+                        router_enabled: routerEnabled,
+                        force_web_search: forceWebSearch,
+                        model: activeModel 
+                    })
                 });
 
                 if (!response.ok) throw new Error("Server communication failed.");
@@ -440,11 +648,16 @@
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
                 
-                contentArea.innerHTML = "";
+                let firstChunkReceived = false;
 
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
+                    
+                    if (!firstChunkReceived) {
+                        contentArea.innerHTML = "";
+                        firstChunkReceived = true;
+                    }
                     
                     const chunkStr = decoder.decode(value);
                     const lines = chunkStr.split('\n');
@@ -463,15 +676,16 @@
                                 const actionId = Date.now().toString();
                                 const shellCode = data.command.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
                                 const actionHTML = `
-                                <div class="mt-4 p-4 bg-orange-500/10 border border-orange-500/30 rounded-xl" id="action-${actionId}">
-                                    <div class="flex items-center gap-2 text-orange-400 font-bold mb-2">
-                                        ⚠️ Permission Required: Target System Execution
+                                <div class="mt-4 p-4 bg-orange-500/10 border border-orange-500/20 rounded-xl" id="action-${actionId}">
+                                    <div class="flex items-center gap-2 text-orange-400 font-semibold text-sm mb-2">
+                                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                                        Permission Required
                                     </div>
-                                    <div class="text-sm text-zinc-300 mb-3">The Administrator Node is requesting execution rights for this shell payload:</div>
-                                    <pre class="bg-black/40 p-3 rounded-lg text-xs font-mono text-zinc-300 mb-3 overflow-x-auto"><code>${shellCode}</code></pre>
-                                    <div class="flex gap-3">
-                                        <button onclick="approveShellAction('${actionId}', '${shellCode}')" class="flex-1 bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 py-2 rounded-lg text-sm font-semibold transition-colors duration-200 border border-orange-500/30">✓ Approve & Run</button>
-                                        <button onclick="denyShellAction('${actionId}')" class="flex-1 bg-white/5 hover:bg-white/10 text-zinc-400 py-2 rounded-lg text-sm font-semibold transition-colors duration-200 border border-white/10">✗ Deny</button>
+                                    <p class="text-xs text-zinc-400 mb-3">The Administrator Node wants to execute:</p>
+                                    <pre class="bg-black/30 p-3 rounded-lg text-xs font-mono text-zinc-300 mb-3 overflow-x-auto border border-white/5"><code>${shellCode}</code></pre>
+                                    <div class="flex gap-2">
+                                        <button onclick="approveShellAction('${actionId}', '${shellCode}')" class="flex-1 bg-teal-500/15 hover:bg-teal-500/25 text-teal-300 py-2 rounded-lg text-xs font-semibold transition-colors border border-teal-500/20">✓ Approve</button>
+                                        <button onclick="denyShellAction('${actionId}')" class="flex-1 bg-white/5 hover:bg-white/10 text-zinc-500 py-2 rounded-lg text-xs font-semibold transition-colors border border-white/8">✗ Deny</button>
                                     </div>
                                 </div>`;
                                 contentArea.insertAdjacentHTML('beforeend', actionHTML);
@@ -499,7 +713,7 @@
 
             } catch (err) {
                 console.error(err);
-                contentArea.innerHTML = `<div class="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-sm font-medium">⚠️ Connection Interrupted: ${err.message}</div>`;
+                contentArea.innerHTML = `<div class="bg-red-500/10 border border-red-500/15 text-red-400 p-4 rounded-xl text-sm font-medium">⚠️ Connection Interrupted: ${err.message}</div>`;
             } finally {
                 inputEl.disabled = false;
                 sendBtn.disabled = false;
@@ -512,7 +726,7 @@
         }
 
         async function approveShellAction(id, command) {
-            document.getElementById(`action-${id}`).innerHTML = '<div class="text-orange-400 font-bold text-sm">⚙️ Executing... please wait.</div>';
+            document.getElementById(`action-${id}`).innerHTML = '<div class="text-teal-400 font-semibold text-sm flex items-center gap-2"><div class="dot-typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div> Executing...</div>';
             try {
                 const res = await fetch('/execute_shell', {
                     method: 'POST',
@@ -551,7 +765,7 @@
                     
                     const chip = document.createElement('div');
                     chip.id = fileId;
-                    chip.className = "flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-900/40 border border-emerald-500/30 text-xs font-medium text-emerald-300 shadow-sm anim-slide-in";
+                    chip.className = "flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-900/30 border border-emerald-500/20 text-xs font-medium text-emerald-300 anim-slide-in";
                     chip.innerHTML = `
                         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                         ${file.name}
@@ -569,7 +783,7 @@
             // Add initial loading chip
             const chip = document.createElement('div');
             chip.id = fileId;
-            chip.className = "flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-800/80 border border-white/10 text-xs font-medium text-zinc-300 shadow-sm anim-slide-in";
+            chip.className = "flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-800/60 border border-white/8 text-xs font-medium text-zinc-300 anim-slide-in";
             chip.innerHTML = `
                 <svg class="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
                 ${file.name}
@@ -586,10 +800,10 @@
                 if (response.ok) {
                     const match = stagedFiles.find(f => f.id === fileId);
                     if (match) match.ready = true;
-                    chip.classList.replace('bg-zinc-800/80', 'bg-purple-900/40');
-                    chip.classList.replace('border-white/10', 'border-purple-500/30');
+                    chip.classList.replace('bg-zinc-800/60', 'bg-teal-900/30');
+                    chip.classList.replace('border-white/8', 'border-teal-500/20');
                     chip.innerHTML = `
-                        <svg class="w-3.5 h-3.5 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"></path></svg>
+                        <svg class="w-3.5 h-3.5 text-teal-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"></path></svg>
                         ${file.name}
                     `;
                 } else {
@@ -597,8 +811,8 @@
                 }
             } catch (err) {
                 console.error(err);
-                chip.classList.replace('bg-zinc-800/80', 'bg-red-900/40');
-                chip.classList.replace('border-white/10', 'border-red-500/30');
+                chip.classList.replace('bg-zinc-800/60', 'bg-red-900/30');
+                chip.classList.replace('border-white/8', 'border-red-500/20');
                 chip.innerHTML = `
                     <svg class="w-3.5 h-3.5 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
                     Error: ${err.message}
