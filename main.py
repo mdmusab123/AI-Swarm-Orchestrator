@@ -51,10 +51,25 @@ def get_memories():
         return []
 
 # --- WEB SEARCH ---
+from bs4 import BeautifulSoup
+import urllib.parse
 def search_web(query):
     try:
-        results = DDGS().text(query, max_results=3)
-        res_strings = [f"- {r.get('title', '')}: {r.get('body', '')}" for r in results]
+        url = "https://html.duckduckgo.com/html/"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36"
+        }
+        data = {"q": query}
+        r = requests.post(url, data=data, headers=headers, timeout=10)
+        soup = BeautifulSoup(r.text, 'html.parser')
+        
+        results = []
+        for a in soup.find_all('a', class_='result__snippet'):
+            results.append(a.text.strip())
+            if len(results) >= 3:
+                break
+                
+        res_strings = [f"- Snippet {i+1}: {text}" for i, text in enumerate(results)]
         return "\n".join(res_strings) if res_strings else "No web results found."
     except Exception as e:
         return f"Web search failed: {str(e)}"
@@ -181,7 +196,7 @@ def chat():
     return Response(stream_with_context(ask_ai_stream(messages, tools_enabled)), mimetype='application/x-ndjson')
 
 if __name__ == "__main__":
-    ngrok.set_auth_token("1xaBGSEtDnlLgIK663nvwSaOiRq_Vgj6aPE1FDxgpk9dh2MR")
+    # ngrok.set_auth_token("1xaBGSEtDnlLgIK663nvwSaOiRq_Vgj6aPE1FDxgpk9dh2MR")
     
     try:
         public_url = ngrok.connect(5001).public_url
