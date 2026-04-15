@@ -682,7 +682,12 @@ Output ONLY the exact category string and nothing else."""
                 elif "[ROUTE: CODE]" in route_text:
                     cat = "CODE"
                     icon = "🤖 Coder Node"
-                    tool_instructions = "You are the Coder Node. Do NOT converse. To calculate, output EXACTLY AND ONLY this syntax:\n[PYTHON: print('hello')]"
+                    tool_instructions = (
+                        "You are the Coder Node. Do NOT converse.\n"
+                        "To calculate or execute code, output EXACTLY AND ONLY:\n[PYTHON: print('hello')]\n"
+                        "To write a file to disk, output EXACTLY AND ONLY:\n[WRITE_FILE: path/to/file.ext]\ncontent\n[/WRITE_FILE]\n"
+                        "To read a file from disk, output EXACTLY AND ONLY:\n[READ_FILE: path/to/file.ext]\n"
+                    )
                 elif "[ROUTE: DATA]" in route_text:
                     cat = "DATA"
                     icon = "📊 Data Agent"
@@ -765,6 +770,8 @@ Output ONLY the exact category string and nothing else."""
                     python_match = re.search(r'\[PYTHON:\s*(.*?)\n?\]', buffer, re.DOTALL)
                     shell_match = re.search(r'\[RUN_SHELL:\s*(.*?)\n?\]', buffer, re.DOTALL)
                     save_tool_match = re.search(r'\[SAVE_TOOL:\s*([^\]]+)\](.*?)\[/SAVE_TOOL\]', buffer, re.DOTALL)
+                    write_file_match = re.search(r'\[WRITE_FILE:\s*([^\]]+)\](.*?)\[/WRITE_FILE\]', buffer, re.DOTALL)
+                    read_file_match = re.search(r'\[READ_FILE:\s*([^\]]+)\]', buffer)
 
                     if analyze_data_match:
                         instructions = analyze_data_match.group(1).strip()
@@ -943,9 +950,47 @@ Output ONLY the exact category string and nothing else."""
                         current_run_msgs.append({"role": "user", "content": f"System Notice: Custom tool successfully saved to {tool_path}."})
                         tool_triggered = True
                         break
+
+                    elif write_file_match:
+                        filepath = write_file_match.group(1).strip()
+                        content = write_file_match.group(2).strip()
+                        if content.startswith('```'): 
+                            content = re.sub(r'^```[a-zA-Z]*\n', '', content)
+                            if content.endswith('```'): content = content[:-3]
+                        
+                        try:
+                            os.makedirs(os.path.dirname(os.path.abspath(filepath)), exist_ok=True)
+                            with open(filepath, 'w', encoding='utf-8') as f:
+                                f.write(content.strip("\n"))
+                            yield json.dumps({"type": "status", "text": f"💾 File created: {filepath}"}) + "\n"
+                            tool_result = f"Successfully wrote to {filepath}"
+                        except Exception as e:
+                            yield json.dumps({"type": "status", "text": f"⚠️ Failed to write file: {e}"}) + "\n"
+                            tool_result = f"Error writing file: {e}"
+                            
+                        current_run_msgs.append({"role": "assistant", "content": full_response})
+                        current_run_msgs.append({"role": "user", "content": f"System Notice: [WRITE_FILE] Result:\n{tool_result}\n\nConform your next output according to the instructions."})
+                        tool_triggered = True
+                        break
+
+                    elif read_file_match:
+                        filepath = read_file_match.group(1).strip()
+                        try:
+                            with open(filepath, 'r', encoding='utf-8') as f:
+                                content = f.read()
+                            yield json.dumps({"type": "status", "text": f"📖 File read: {filepath}"}) + "\n"
+                            tool_result = f"File Content for {filepath}:\n```\n{content}\n```"
+                        except Exception as e:
+                            yield json.dumps({"type": "status", "text": f"⚠️ Failed to read file: {e}"}) + "\n"
+                            tool_result = f"Error reading file: {e}"
+                        
+                        current_run_msgs.append({"role": "assistant", "content": full_response})
+                        current_run_msgs.append({"role": "user", "content": f"System Notice: [READ_FILE] Result:\n{tool_result}\n\nUse this information."})
+                        tool_triggered = True
+                        break
                     
                     if len(buffer) > 60:
-                        if re.match(r'^\[(?:SEARCH|MEM_SAVE|SEARCH_DOC|READ_URL|PYTHON|RUN_SHELL|SAVE_TOOL):', buffer):
+                        if re.match(r'^\[(?:SEARCH|MEM_SAVE|SEARCH_DOC|READ_URL|PYTHON|RUN_SHELL|SAVE_TOOL|WRITE_FILE|READ_FILE):', buffer):
                             if len(buffer) > 20000: # safety bailout expanded for tools
                                 yield json.dumps({"type": "content", "text": buffer}) + "\n"
                                 buffer = ""
@@ -966,7 +1011,7 @@ Output ONLY the exact category string and nothing else."""
                 continue
             else:
                 if buffer:
-                    clean_buf = re.sub(r'\[(?:SEARCH|MEM_SAVE|SEARCH_DOC|READ_URL|PYTHON|RUN_SHELL|SAVE_TOOL).*$', '', buffer, flags=re.DOTALL)
+                    clean_buf = re.sub(r'\[(?:SEARCH|MEM_SAVE|SEARCH_DOC|READ_URL|PYTHON|RUN_SHELL|SAVE_TOOL|WRITE_FILE|READ_FILE).*$', '', buffer, flags=re.DOTALL)
                     if clean_buf:
                         yield json.dumps({"type": "content", "text": clean_buf}) + "\n"
                 break
