@@ -409,6 +409,32 @@
           "reasoning": "User explicitly requests location to be stored in memory."
         }
       ]
+    },
+    "PLANNER": {
+      "description": "Orchestrating multiple tools sequentially to solve complex multi-step problems.",
+      "tools": ["[SEARCH: query]", "[PYTHON: code]", "[RUN_SHELL: command]", "[WRITE_FILE: path]"],
+      "trigger_keywords": [
+        "plan", "multi-step", "first", "then", "after that", "configure and install",
+        "search and write", "find out and run", "step by step", "download configure install",
+        "gain knowledge", "planning and executing", "sequentially", "workflow"
+      ],
+      "examples": [
+        {
+          "input": "First find the latest version of React, then install it, then write a basic component.",
+          "action": "[ROUTE: PLANNER]",
+          "reasoning": "Multi-step orchestration required."
+        },
+        {
+          "input": "Search the web for the latest python version, then download and install it.",
+          "action": "[ROUTE: PLANNER]",
+          "reasoning": "Requires doing a search followed by a system command."
+        },
+        {
+          "input": "Download the dataset, configure the environment, and write a python script to analyze it.",
+          "action": "[ROUTE: PLANNER]",
+          "reasoning": "Complex multi-stage execution."
+        }
+      ]
     }
   },
   "global_rules": {
@@ -450,7 +476,8 @@
       "CODE": 10,
       "DOCS": 10,
       "SYSTEM": 12,
-      "GENERAL": 10
+      "GENERAL": 10,
+      "PLANNER": 3
     },
     "created_for": "Nexus Swarm Router AI Agent",
     "dataset_purpose": "Training an AI routing brain to select the correct tool and action format based on user intent.",

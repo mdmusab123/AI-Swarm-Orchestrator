@@ -606,6 +606,18 @@
                     </label>
                 </div>
 
+                <!-- Auto-Approve Shell Toggle -->
+                <div class="flex items-center justify-between p-3.5 rounded-xl bg-white/[0.02] border border-white/5">
+                    <div>
+                        <p class="text-sm font-medium text-zinc-200">Auto-Approve Shell</p>
+                        <p class="text-xs text-zinc-600 mt-0.5">Run system commands without asking.</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="auto-shell-toggle" class="sr-only peer">
+                        <div class="w-11 h-6 bg-zinc-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-500"></div>
+                    </label>
+                </div>
+
                 <button onclick="saveSettings()" class="w-full bg-gradient-to-r from-teal-500 to-emerald-500 text-white font-semibold py-3 rounded-xl transition-all mt-2 shadow-lg shadow-teal-500/20 hover:shadow-teal-500/30 hover:brightness-110">Save Preferences</button>
             </div>
         </div>
@@ -620,6 +632,7 @@
         let systemPrompt = localStorage.getItem('ai_sys_prompt') || '';
         let toolsEnabled = localStorage.getItem('ai_tools_enabled') !== 'false';
         let routerEnabled = localStorage.getItem('ai_router_enabled') !== 'false';
+        let autoShellEnabled = localStorage.getItem('ai_auto_shell') === 'true';
         let activeModel = localStorage.getItem('ai_model') || 'gemma4:e2b';
         let forceWebSearch = false;
         let thinkingEnabled = false;
@@ -640,6 +653,7 @@
             document.getElementById("sys-prompt").value = systemPrompt;
             document.getElementById("tools-toggle").checked = toolsEnabled;
             document.getElementById("router-toggle").checked = routerEnabled;
+            document.getElementById("auto-shell-toggle").checked = autoShellEnabled;
             document.getElementById("tavily-key").value = tavilyApiKey;
             fetchModels();
             
@@ -775,11 +789,13 @@
             systemPrompt = document.getElementById("sys-prompt").value;
             toolsEnabled = document.getElementById("tools-toggle").checked;
             routerEnabled = document.getElementById("router-toggle").checked;
+            autoShellEnabled = document.getElementById("auto-shell-toggle").checked;
             activeModel = document.getElementById("model-select").value;
             tavilyApiKey = document.getElementById("tavily-key").value;
             localStorage.setItem('ai_sys_prompt', systemPrompt);
             localStorage.setItem('ai_tools_enabled', toolsEnabled);
             localStorage.setItem('ai_router_enabled', routerEnabled);
+            localStorage.setItem('ai_auto_shell', autoShellEnabled);
             localStorage.setItem('ai_model', activeModel);
             localStorage.setItem('ai_tavily_key', tavilyApiKey);
             toggleSettings();
@@ -1149,8 +1165,12 @@
                                 </div>`;
                                 contentArea.insertAdjacentHTML('beforeend', actionHTML);
                                 scrollToBottom();
-                            } else if (parsed.type === "chart") {
-                                const imgHTML = `<div class="mt-3 rounded-xl overflow-hidden border border-white/10 shadow-lg shadow-black/40"><img src="${parsed.url}" class="w-full rounded-xl" alt="Generated Chart" /></div>`;
+
+                                if (autoShellEnabled) {
+                                    setTimeout(() => approveShellAction(actionId, shellCode), 1000);
+                                }
+                            } else if (data.type === "chart") {
+                                const imgHTML = `<div class="mt-3 rounded-xl overflow-hidden border border-white/10 shadow-lg shadow-black/40"><img src="${data.url}" class="w-full rounded-xl" alt="Generated Chart" /></div>`;
                                 contentArea.insertAdjacentHTML('beforeend', imgHTML);
                                 scrollToBottom();
                             }

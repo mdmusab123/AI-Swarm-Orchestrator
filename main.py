@@ -107,7 +107,7 @@ app = Flask(__name__)
 
 # CONFIGURATION
 MODEL = "gemma4:e4b"
-API_URL = "http://127.0.0.1:11434/api/chat"
+API_URL = "https://jeans-blank-entered-chuck.trycloudflare.com/api/generate"
 UPLOAD_FOLDER = "uploads"
 TOOLS_FOLDER = "tools"
 NGROK_AUTH_TOKEN = "1xaBGSEtDnlLgIK663nvwSaOiRq_Vgj6aPE1FDxgpk9dh2MR" # Set your authtoken here
@@ -669,9 +669,11 @@ Example: If asked to ping google, output exactly and ONLY:
                 ds_research_kw = get_trigger_keywords("RESEARCH")
                 ds_system_kw = get_trigger_keywords("SYSTEM")
                 ds_docs_kw = get_trigger_keywords("DOCS")
+                ds_planner_kw = get_trigger_keywords("PLANNER")
                 current_event_keywords = list(set(["current", "latest", "now", "who is", "today", "news", "status", "price", "population", "compare", "details of", "how many", "weather"] + ds_research_kw))
                 system_keywords = list(set(["install", "pip", "modulenotfounderror", "missing module", "download"] + ds_system_kw))
                 doc_keywords = list(set(["read the file", "pdf", "document", "uploaded", "resume", "my file", "the report"] + ds_docs_kw))
+                planner_keywords = list(set(["plan", "first", "then", "step", "multi-step", "configure", "workflow"] + ds_planner_kw))
                 last_user_msg = user_msgs[-1].lower() if user_msgs else ""
                 
                 data_keywords = ["csv", "excel", "xlsx", "spreadsheet", "dataset", "data analysis", "chart", "plot", "graph", "revenue", "sales", "statistics", "insights from", "visualize", "correlation", "monthly", "trend"]
@@ -681,6 +683,7 @@ Example: If asked to ping google, output exactly and ONLY:
                 nudge_docs = "has attached the following document" in last_user_msg or any(kw in last_user_msg for kw in doc_keywords)
                 nudge_analysis = any(kw in last_user_msg for kw in analysis_keywords)
                 nudge_data = any(kw in last_user_msg for kw in data_keywords)
+                nudge_planner = any(kw in last_user_msg for kw in planner_keywords)
                     
                 # Build few-shot examples for the router from the instruction dataset
                 research_examples = get_route_examples("RESEARCH", 3)
@@ -688,6 +691,7 @@ Example: If asked to ping google, output exactly and ONLY:
                 docs_examples = get_route_examples("DOCS", 2)
                 system_examples = get_route_examples("SYSTEM", 2)
                 general_examples = get_route_examples("GENERAL", 2)
+                planner_examples = get_route_examples("PLANNER", 2)
 
                 few_shot_block = ""
                 if research_examples:
@@ -700,6 +704,8 @@ Example: If asked to ping google, output exactly and ONLY:
                     few_shot_block += f"\nExamples for SYSTEM:\n{system_examples}"
                 if general_examples:
                     few_shot_block += f"\nExamples for GENERAL:\n{general_examples}"
+                if planner_examples:
+                    few_shot_block += f"\nExamples for PLANNER:\n{planner_examples}"
                     
                 router_prompt = f"""You are a routing agent. Read the user's messages to understand the context.
 Categorize the user's LATEST request into EXACTLY ONE of these strings:
@@ -726,7 +732,9 @@ Recent User Messages Context:
 
 Output ONLY the exact category string and nothing else."""
 
-                if force_web_search or (nudge_research and not nudge_docs and not nudge_analysis):
+                if nudge_planner:
+                    route_text = "[ROUTE: PLANNER]"
+                elif force_web_search or (nudge_research and not nudge_docs and not nudge_analysis):
                     route_text = "[ROUTE: RESEARCH]"
                 elif nudge_system:
                     route_text = "[ROUTE: SYSTEM]"
@@ -758,6 +766,12 @@ Output ONLY the exact category string and nothing else."""
                         "For COMPLEX questions needing deep research (guides, comparisons, multi-topic reports), use: [DEEP_RESEARCH: query]\n"
                         "DO NOT CONVERSE. Output ONLY the tool syntax. DO NOT ANSWER FROM MEMORY."
                     )
+                    if browse_enabled:
+                        tool_instructions += (
+                            "\nYou also have a LIVE WEB BROWSER. To navigate to a URL and see page content:\n[BROWSE: https://example.com]\n"
+                            "To click an element on the current page:\n[BROWSER_CLICK: css_selector_or_visible_text]\n"
+                            "To type into a form field:\n[BROWSER_TYPE: selector | text to type]\n"
+                        )
                 elif "[ROUTE: ANALYSIS]" in route_text:
                     cat = "ANALYSIS"
                     icon = "🧬 Analysis Node"
