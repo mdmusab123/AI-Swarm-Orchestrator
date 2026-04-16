@@ -47,7 +47,7 @@
 1. **Clone the Repository:**
    ```bash
    git clone https://github.com/mdmusab123/AI-Swarm-Orchestrator.git
-   cd OmniNexus
+   cd AI-Swarm-Orchestrator
    ```
 
 2. **Install Dependencies:**
