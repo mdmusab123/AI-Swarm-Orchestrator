@@ -106,8 +106,8 @@ def browser_type(selector, value):
 app = Flask(__name__)
 
 # CONFIGURATION
-MODEL = "gemma4:e4b"
-API_URL = "https://jeans-blank-entered-chuck.trycloudflare.com/api/generate"
+MODEL = "qwen3.6:27b"
+API_URL = "https://accurately-knives-episode-desperate.trycloudflare.com/api/generate"
 UPLOAD_FOLDER = "uploads"
 TOOLS_FOLDER = "tools"
 NGROK_AUTH_TOKEN = "1xaBGSEtDnlLgIK663nvwSaOiRq_Vgj6aPE1FDxgpk9dh2MR" # Set your authtoken here
@@ -482,7 +482,7 @@ def get_search_urls(query, tavily_key="", max_urls=3):
     return urls
 
 # --- SELF-ANALYSIS BRAIN (Repository Intelligence) ---
-CODEBASE_ROOT = os.path.dirname(os.path.abspath(__file__))
+CODEBASE_ROOT = os.getcwd()
 CODE_EXTENSIONS = {".py", ".html", ".json", ".md", ".txt", ".js", ".css"}
 EXCLUDE_DIRS = {".git", "__pycache__", "node_modules", "memory_db_vectors", "uploads", "tools"}
 
